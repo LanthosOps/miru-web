@@ -72,6 +72,52 @@ RSpec.describe "Api::V1::Users::Registrations#create", type: :request do
       expect(response).to have_http_status(:forbidden)
     end
 
+    it "rejects an email outside the configured signup allowlist" do
+      allow(ENV).to receive(:fetch).and_call_original
+      allow(ENV).to receive(:fetch)
+        .with("MIRU_ALLOWED_SIGNUP_EMAILS", "")
+        .and_return("owner@example.com, allowed@example.com")
+
+      expect {
+        send_request :post, api_v1_users_signup_path, params: {
+          user: valid_user_json.merge(email: "other@example.com")
+        }
+      }.not_to change(User, :count)
+
+      expect(response).to have_http_status(:forbidden)
+      expect(json_response["error"]).to eq("Sign-up is not available for this email.")
+    end
+
+    it "allows a configured signup email case-insensitively" do
+      allow(ENV).to receive(:fetch).and_call_original
+      allow(ENV).to receive(:fetch)
+        .with("MIRU_ALLOWED_SIGNUP_EMAILS", "")
+        .and_return("allowed@example.com")
+
+      expect {
+        send_request :post, api_v1_users_signup_path, params: {
+          user: valid_user_json.merge(email: "Allowed@Example.com")
+        }
+      }.to change(User, :count).by(1)
+
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "keeps upstream open-signup behavior when the allowlist is empty" do
+      allow(ENV).to receive(:fetch).and_call_original
+      allow(ENV).to receive(:fetch)
+        .with("MIRU_ALLOWED_SIGNUP_EMAILS", "")
+        .and_return("")
+
+      expect {
+        send_request :post, api_v1_users_signup_path, params: {
+          user: valid_user_json.merge(email: generate(:user_email))
+        }
+      }.to change(User, :count).by(1)
+
+      expect(response).to have_http_status(:ok)
+    end
+
     it "creates user successfully from the desktop app payload" do
       send_request :post, api_v1_users_signup_path, params: {
         user: desktop_signup_json

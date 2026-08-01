@@ -33,7 +33,10 @@ Rails.application.configure do
   # Enable serving of images, stylesheets, and JavaScripts from an asset server.
   # config.asset_host = "http://assets.example.com"
 
-  config.active_storage.service = :cloudflare
+  # Cloudflare R2 remains the upstream default. Deployment owners can choose
+  # another configured Active Storage service without maintaining a fork-only
+  # production environment file.
+  config.active_storage.service = ENV.fetch("ACTIVE_STORAGE_SERVICE", "cloudflare").to_sym
 
   # Assume all access to the app is happening through a SSL-terminating reverse proxy.
   config.assume_ssl = true
