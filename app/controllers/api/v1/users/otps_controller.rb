@@ -27,6 +27,8 @@ class Api::V1::Users::OtpsController < Api::V1::ApplicationController
       pending_token: otp_params[:pending_token],
       code: otp_params[:code]
     )
+    return unless ensure_internal_deployment_user_allowed!(result.user)
+
     sign_in(result.user)
 
     render json: signed_in_payload(

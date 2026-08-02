@@ -6,9 +6,23 @@ if [ -z "${LD_PRELOAD+x}" ]; then
     export LD_PRELOAD
 fi
 
-# If running the rails server then create or migrate existing database
-if [[ "${*}" == *"falcon host"* ]] || [[ "${*}" == *"falcon serve"* ]] || ([ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]); then
+# If running the Rails server then create or migrate the existing database.
+verify_internal_deployment=false
+if [[ "${*}" == *"falcon host"* ]] || [[ "${*}" == *"falcon serve"* ]] || [[ "${*}" == *"puma"* ]] || ([ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]); then
   ./bin/rails db:prepare
+  verify_internal_deployment=true
+fi
+
+# Workers must fail closed too; they can otherwise process queued access or
+# billing work while the web service is refusing an unsafe cutover.
+if [[ "${*}" == *"solid_queue:start"* ]]; then
+  verify_internal_deployment=true
+fi
+
+if [[ "${verify_internal_deployment}" == "true" ]]; then
+  case "${MIRU_INTERNAL_DEPLOYMENT:-}" in
+    1|true|TRUE|yes|YES|on|ON) bundle exec rake internal_deployment:verify ;;
+  esac
 fi
 
 exec "${@}"

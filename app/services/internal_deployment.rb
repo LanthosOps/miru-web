@@ -17,7 +17,7 @@ class InternalDeployment
     end
 
     def signup_email_allowed?(email)
-      return true if allowed_emails.empty? && !enabled?
+      return true unless enabled?
 
       allowed_emails.include?(normalize_email(email))
     end

@@ -74,6 +74,24 @@ RSpec.describe "Api::V1::Agent::TimesheetEntries#create", type: :request do
     expect(response).to have_http_status(:unauthorized)
   end
 
+  it "rejects an agent key when its user is outside the internal allowlist" do
+    allow(ENV).to receive(:[]).and_call_original
+    allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+    allow(ENV).to receive(:fetch).and_call_original
+    allow(ENV).to receive(:fetch).with("MIRU_ALLOWED_SIGNUP_EMAILS", "").and_return("owner@example.com")
+
+    send_request :post, api_v1_agent_timesheet_entries_path, params: {
+      timesheet_entry: {
+        project_id: project.id,
+        duration_minutes: 30,
+        work_date: Date.current.iso8601
+      }
+    }, headers: { "Authorization" => "Bearer #{agent_token}" }
+
+    expect(response).to have_http_status(:forbidden)
+    expect(TimesheetEntry.where(user:)).to be_empty
+  end
+
   it "rejects a project outside the backing user's membership scope" do
     other_project = create(:project, client:)
 

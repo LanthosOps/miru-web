@@ -4,7 +4,7 @@ class User < ApplicationRecord
   include Devise::JWT::RevocationStrategies::JTIMatcher
   include PhoneNumberValidatable
 
-  TOTP_ISSUER = "Miru"
+  TOTP_ISSUER = InternalDeployment.enabled? ? "Lanthos Ops" : "Miru"
   RECOVERY_CODES_COUNT = 8
   MAX_AVATAR_SIZE_MB = 5
   ALLOWED_AVATAR_CONTENT_TYPES = %w[image/png image/jpeg image/jpg image/webp].freeze
@@ -398,6 +398,8 @@ class User < ApplicationRecord
     end
 
     def send_to_hubspot
+      return if InternalDeployment.enabled?
+
       HubspotIntegrationJob.perform_later(email, first_name, last_name)
     rescue StandardError => error
       Rails.logger.warn("HubSpot signup enqueue failed for user_id=#{id}: #{error.class}: #{error.message}")

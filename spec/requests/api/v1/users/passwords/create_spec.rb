@@ -14,6 +14,19 @@ RSpec.describe "Api::V1::Users::Passwords#create", type: :request do
           "notice" => I18n.t("password.create.success")
         )
       end
+
+      it "does not issue a reset token to a disallowed internal account" do
+        allow(ENV).to receive(:[]).and_call_original
+        allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+        allow(ENV).to receive(:fetch).and_call_original
+        allow(ENV).to receive(:fetch).with("MIRU_ALLOWED_SIGNUP_EMAILS", "").and_return("owner@example.com")
+
+        send_request :post, api_v1_users_forgot_password_path, params: { user: { email: user.email } }
+
+        expect(response).to have_http_status(:ok)
+        expect(user.reload.reset_password_token).to be_nil
+        expect(user.reset_password_sent_at).to be_nil
+      end
     end
 
     context "with invalid email" do

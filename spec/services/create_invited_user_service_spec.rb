@@ -141,6 +141,26 @@ RSpec.describe CreateInvitedUserService do
       end
     end
 
+    context "when a pre-cutover invitation is outside the internal allowlist" do
+      before do
+        allow(ENV).to receive(:[]).and_call_original
+        allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+        allow(ENV).to receive(:fetch).and_call_original
+        allow(ENV).to receive(:fetch).with("MIRU_ALLOWED_SIGNUP_EMAILS", "").and_return("owner@example.com")
+      end
+
+      it "does not accept the invitation or create workspace access" do
+        service = described_class.new(invitation.token)
+
+        expect { service.process }.not_to change(User, :count)
+
+        expect(service.success).to eq(false)
+        expect(service.error_message).to eq("Invitation is not approved for this internal workspace.")
+        expect(invitation.reload.accepted_at).to be_nil
+        expect(company.employments).to be_empty
+      end
+    end
+
     context "when different user accepts invitation" do
       before do
         invitation.update_columns(recipient_email: user.email)

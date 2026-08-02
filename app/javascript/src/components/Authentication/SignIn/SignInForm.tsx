@@ -7,7 +7,11 @@ import { InputErrors, InputField } from "common/FormikFields";
 import { useAuthDispatch } from "context/auth";
 import { useUserContext } from "context/UserContext";
 import { Formik, Form, FormikProps } from "formik";
-import { internalDeploymentEnabled } from "../../../lib/internalDeployment";
+import {
+  githubOauthEnabled,
+  googleOauthEnabled,
+  internalDeploymentEnabled,
+} from "../../../lib/internalDeployment";
 import { GithubIcon, GoogleSVG } from "miruIcons";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -31,6 +35,9 @@ interface SignInFormValues {
 
 const SignInForm = () => {
   const isInternalDeployment = internalDeploymentEnabled();
+  const googleOauthAvailable = googleOauthEnabled();
+  const githubOauthAvailable = githubOauthEnabled();
+  const oauthAvailable = googleOauthAvailable || githubOauthAvailable;
   const { locale } = useUserContext();
   const [privacyModal, setPrivacyModal] = useState(false);
   const [termsOfServiceModal, setTermsOfServiceModal] = useState(false);
@@ -164,61 +171,73 @@ const SignInForm = () => {
       title={t("auth.signIn.title")}
     >
       <div>
-        <Formik
-          initialValues={{}}
-          validateOnBlur={false}
-          validationSchema=""
-          onSubmit={() => {}}
-        >
-          {() => (
-            <div className="mb-6 space-y-3">
-              <Form
-                action="/users/auth/google_oauth2"
-                method="post"
-                ref={googleOauth}
-              >
-                <input
-                  name="authenticity_token"
-                  type="hidden"
-                  value={csrfToken}
-                />
-                <button
-                  className="flex w-full items-center justify-center rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground shadow-sm transition hover:bg-accent"
-                  type="submit"
-                  onClick={handleGoogleAuth}
-                >
-                  <img alt="" className="mr-2" src={GoogleSVG} />
-                  {t("auth.signIn.continueWithGoogle")}
-                </button>
-              </Form>
-              <Form action="/users/auth/github" method="post" ref={githubOauth}>
-                <input
-                  name="authenticity_token"
-                  type="hidden"
-                  value={csrfToken}
-                />
-                <button
-                  className="flex w-full items-center justify-center rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground shadow-sm transition hover:bg-accent"
-                  type="submit"
-                  onClick={handleGithubAuth}
-                >
-                  <GithubIcon
-                    className="mr-2 h-4 w-4 text-foreground"
-                    weight="fill"
-                  />
-                  {t("auth.signIn.continueWithGitHub")}
-                </button>
-              </Form>
-            </div>
-          )}
-        </Formik>
-        <div className="relative mb-6 flex items-center">
-          <div className="flex-grow border-t border-border" />
-          <span className="mx-4 flex-shrink text-xs uppercase tracking-[0.18em] text-muted-foreground">
-            {t("auth.signIn.orUseEmail")}
-          </span>
-          <div className="flex-grow border-t border-border" />
-        </div>
+        {oauthAvailable && (
+          <Formik
+            initialValues={{}}
+            validateOnBlur={false}
+            validationSchema=""
+            onSubmit={() => {}}
+          >
+            {() => (
+              <div className="mb-6 space-y-3">
+                {googleOauthAvailable && (
+                  <Form
+                    action="/users/auth/google_oauth2"
+                    method="post"
+                    ref={googleOauth}
+                  >
+                    <input
+                      name="authenticity_token"
+                      type="hidden"
+                      value={csrfToken}
+                    />
+                    <button
+                      className="flex w-full items-center justify-center rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground shadow-sm transition hover:bg-accent"
+                      type="submit"
+                      onClick={handleGoogleAuth}
+                    >
+                      <img alt="" className="mr-2" src={GoogleSVG} />
+                      {t("auth.signIn.continueWithGoogle")}
+                    </button>
+                  </Form>
+                )}
+                {githubOauthAvailable && (
+                  <Form
+                    action="/users/auth/github"
+                    method="post"
+                    ref={githubOauth}
+                  >
+                    <input
+                      name="authenticity_token"
+                      type="hidden"
+                      value={csrfToken}
+                    />
+                    <button
+                      className="flex w-full items-center justify-center rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground shadow-sm transition hover:bg-accent"
+                      type="submit"
+                      onClick={handleGithubAuth}
+                    >
+                      <GithubIcon
+                        className="mr-2 h-4 w-4 text-foreground"
+                        weight="fill"
+                      />
+                      {t("auth.signIn.continueWithGitHub")}
+                    </button>
+                  </Form>
+                )}
+              </div>
+            )}
+          </Formik>
+        )}
+        {oauthAvailable && (
+          <div className="relative mb-6 flex items-center">
+            <div className="flex-grow border-t border-border" />
+            <span className="mx-4 flex-shrink text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              {t("auth.signIn.orUseEmail")}
+            </span>
+            <div className="flex-grow border-t border-border" />
+          </div>
+        )}
         <div>
           {isTotpPending && (
             <div className="mb-6 space-y-4 rounded-2xl border border-border bg-card p-5 shadow-sm">

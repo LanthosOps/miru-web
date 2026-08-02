@@ -27,6 +27,8 @@ class Api::V1::Mobile::OtpsController < Api::V1::ApplicationController
     )
     user = result.user
     company = result.company
+    return unless ensure_internal_deployment_user_allowed!(user)
+
     sign_in user, store: false
 
     render json: {

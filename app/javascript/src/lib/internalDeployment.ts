@@ -7,3 +7,11 @@ export const productName = (): string =>
 
 export const productHomeUrl = (): string =>
   internalDeploymentEnabled() ? "/" : "https://miru.so/";
+
+export const googleOauthEnabled = (): boolean =>
+  typeof document !== "undefined" &&
+  document.documentElement.dataset.googleOauthEnabled === "true";
+
+export const githubOauthEnabled = (): boolean =>
+  typeof document !== "undefined" &&
+  document.documentElement.dataset.githubOauthEnabled === "true";

@@ -1,21 +1,23 @@
-<% content_for :email_preheader, t("mailers.devise.email_changed.preheader") %>
-<% content_for :email_eyebrow, t("mailers.devise.email_changed.eyebrow") %>
-<% content_for :email_title, t("mailers.devise.email_changed.title") %>
+<% internal_deployment = InternalDeployment.enabled? %>
+<% support_email = ENV.fetch("REPLY_TO_EMAIL", "support@datapulsetech.ai") %>
+<% content_for :email_preheader, internal_deployment ? "Your Lanthos Ops email changed." : t("mailers.devise.email_changed.preheader") %>
+<% content_for :email_eyebrow, internal_deployment ? "Account security" : t("mailers.devise.email_changed.eyebrow") %>
+<% content_for :email_title, internal_deployment ? "Email address update" : t("mailers.devise.email_changed.title") %>
 <% content_for :email_subtitle do %>
-  <%= t("mailers.devise.email_changed.subtitle") %>
+  <%= internal_deployment ? "A security change was made to your internal workspace account." : t("mailers.devise.email_changed.subtitle") %>
 <% end %>
 
-<p><%= t("mailers.devise.email_changed.greeting_html", email: @email) %></p>
+<p><%= internal_deployment ? "Hello #{@email}," : t("mailers.devise.email_changed.greeting_html", email: @email) %></p>
 
 <% if @resource.try(:unconfirmed_email?) %>
-  <p><%= t("mailers.devise.email_changed.pending_html", email: @resource.unconfirmed_email) %></p>
+  <p><%= internal_deployment ? "Your account email is being changed to #{@resource.unconfirmed_email}." : t("mailers.devise.email_changed.pending_html", email: @resource.unconfirmed_email) %></p>
 <% else %>
-  <p><%= t("mailers.devise.email_changed.changed_html", email: @resource.email) %></p>
+  <p><%= internal_deployment ? "Your account email was changed to #{@resource.email}." : t("mailers.devise.email_changed.changed_html", email: @resource.email) %></p>
 <% end %>
 
 <div class="email-panel email-panel-warning">
-  <p class="email-panel-title"><%= t("mailers.devise.email_changed.warning_title") %></p>
-  <p style="margin-bottom: 0;"><%= t("mailers.devise.email_changed.warning_body_html", email: "hello@saeloun.com") %></p>
+  <p class="email-panel-title"><%= internal_deployment ? "Wasn't you?" : t("mailers.devise.email_changed.warning_title") %></p>
+  <p style="margin-bottom: 0;"><%= internal_deployment ? "Contact #{support_email} immediately if you did not make this change." : t("mailers.devise.email_changed.warning_body_html", email: "hello@saeloun.com") %></p>
 </div>
 
-<p><%= t("mailers.devise.shared.signature_html") %></p>
+<p><%= internal_deployment ? "Lanthos Ops" : t("mailers.devise.shared.signature_html") %></p>

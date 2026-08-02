@@ -1,9 +1,15 @@
 # frozen_string_literal: true
 
 class Api::V1::Users::PasswordsController < Devise::PasswordsController
+  include InternalDeploymentAccess
+
   respond_to :json
 
   def create
+    unless InternalDeployment.signup_email_allowed?(resource_params[:email])
+      return render json: { notice: I18n.t("password.create.success") }, status: 200
+    end
+
     self.resource = resource_class.send_reset_password_instructions(resource_params)
     if successfully_sent?(resource)
       render json: { notice: I18n.t("password.create.success") }, status: 200
@@ -13,6 +19,9 @@ class Api::V1::Users::PasswordsController < Devise::PasswordsController
   end
 
   def update
+    reset_user = User.with_reset_password_token(password_params[:reset_password_token])
+    return unless reset_user.nil? || ensure_internal_deployment_user_allowed!(reset_user)
+
     user = User.reset_password_by_token(password_params)
     if user.errors.empty?
       unless user.active_for_authentication?

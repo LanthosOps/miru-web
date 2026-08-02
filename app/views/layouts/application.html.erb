@@ -1,6 +1,9 @@
 <% internal_deployment = InternalDeployment.enabled? %>
 <!DOCTYPE html>
-<html lang="<%= I18n.locale %>" data-internal-deployment="<%= internal_deployment %>">
+<html lang="<%= I18n.locale %>"
+  data-internal-deployment="<%= internal_deployment %>"
+  data-google-oauth-enabled="<%= AuthenticationProviderConfig.google_enabled? %>"
+  data-github-oauth-enabled="<%= AuthenticationProviderConfig.github_enabled? %>">
   <head>
   <% app_name = internal_deployment ? "Lanthos Ops" : t("app.name") %>
   <% default_title = internal_deployment ? "Lanthos Ops | Internal operations" : "#{app_name} | Time tracking and invoicing" %>

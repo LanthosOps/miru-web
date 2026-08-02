@@ -1,9 +1,9 @@
 import React from "react";
 
+import BrandLogo from "common/BrandLogo";
 import CompanyInfo from "components/Invoices/common/CompanyInfo";
 import ClientInfo from "components/Invoices/Invoice/ClientInfo";
 import InvoiceLineItems from "components/Invoices/Invoice/InvoiceLineItems";
-import { MiruLogoWithTextSVG } from "miruIcons";
 
 import { i18n } from "../../../i18n";
 
@@ -75,7 +75,7 @@ const InvoiceDetails = ({
           {upiPayment?.qr_code_data_uri && (
             <div className="max-w-xs rounded-lg border border-border bg-card p-4">
               <div className="mb-3 flex items-center justify-center border-b border-border pb-3">
-                <img alt="Miru" className="h-6" src={MiruLogoWithTextSVG} />
+                <BrandLogo imageClassName="h-6 w-auto" />
               </div>
               <img
                 alt="UPI QR code"

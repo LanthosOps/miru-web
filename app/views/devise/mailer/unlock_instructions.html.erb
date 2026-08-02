@@ -1,21 +1,22 @@
-<% content_for :email_preheader, t("mailers.devise.unlock.preheader") %>
-<% content_for :email_eyebrow, t("mailers.devise.unlock.eyebrow") %>
-<% content_for :email_title, t("mailers.devise.unlock.title") %>
+<% internal_deployment = InternalDeployment.enabled? %>
+<% content_for :email_preheader, internal_deployment ? "Unlock your Lanthos Ops account." : t("mailers.devise.unlock.preheader") %>
+<% content_for :email_eyebrow, internal_deployment ? "Account security" : t("mailers.devise.unlock.eyebrow") %>
+<% content_for :email_title, internal_deployment ? "Account locked" : t("mailers.devise.unlock.title") %>
 <% content_for :email_subtitle do %>
-  <%= t("mailers.devise.unlock.subtitle") %>
+  <%= internal_deployment ? "Reset your password to regain access to the internal workspace." : t("mailers.devise.unlock.subtitle") %>
 <% end %>
 
-<p><%= t("mailers.devise.unlock.greeting_html", email: @resource.email) %></p>
+<p><%= internal_deployment ? "Hello #{@resource.email}," : t("mailers.devise.unlock.greeting_html", email: @resource.email) %></p>
 
 <div class="email-panel email-panel-danger">
-  <p class="email-panel-title"><%= t("mailers.devise.unlock.warning_title") %></p>
-  <p style="margin-bottom: 0;"><%= t("mailers.devise.unlock.warning_body") %></p>
+  <p class="email-panel-title"><%= internal_deployment ? "Sign-in attempts blocked" : t("mailers.devise.unlock.warning_title") %></p>
+  <p style="margin-bottom: 0;"><%= internal_deployment ? "Your account was locked after too many unsuccessful sign-in attempts." : t("mailers.devise.unlock.warning_body") %></p>
 </div>
 
-<%= render "shared/mailer/button", href: "#{ENV.fetch("APP_BASE_URL", "http://127.0.0.1:3000")}/password/new", label: t("mailers.devise.unlock.cta") %>
+<%= render "shared/mailer/button", href: "#{ENV.fetch("APP_BASE_URL", "http://127.0.0.1:3000")}/password/new", label: internal_deployment ? "Reset password" : t("mailers.devise.unlock.cta") %>
 
 <div class="email-divider"></div>
 
-<p class="email-muted"><%= t("mailers.devise.unlock.footer_note") %></p>
+<p class="email-muted"><%= internal_deployment ? "If you did not attempt to sign in, reset your password and contact your administrator." : t("mailers.devise.unlock.footer_note") %></p>
 
-<p><%= t("mailers.devise.shared.signature_html") %></p>
+<p><%= internal_deployment ? "Lanthos Ops" : t("mailers.devise.shared.signature_html") %></p>

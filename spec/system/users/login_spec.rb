@@ -28,12 +28,36 @@ RSpec.describe "Sign-in", type: :system, js: true do
     end
 
     it "shows both Google and GitHub sign-in options" do
+      allow(ENV).to receive(:[]).and_call_original
+      allow(ENV).to receive(:[]).with("GOOGLE_OAUTH_CLIENT_ID").and_return("google-client")
+      allow(ENV).to receive(:[]).with("GOOGLE_OAUTH_CLIENT_SECRET").and_return("google-secret")
+      allow(ENV).to receive(:[]).with("GITHUB_OAUTH_CLIENT_ID").and_return("github-client")
+      allow(ENV).to receive(:[]).with("GITHUB_OAUTH_CLIENT_SECRET").and_return("github-secret")
+
       with_forgery_protection do
         visit "/login"
         wait_for_react_app
 
         expect(page).to have_button("Continue with Google")
         expect(page).to have_button("Continue with GitHub")
+      end
+    end
+
+    it "hides OAuth options when provider credentials are unavailable" do
+      allow(ENV).to receive(:[]).and_call_original
+      %w[
+        GOOGLE_OAUTH_CLIENT_ID GOOGLE_OAUTH_CLIENT_SECRET
+        GITHUB_OAUTH_CLIENT_ID GITHUB_OAUTH_CLIENT_SECRET
+        MIRU_GH_CLIENT_ID MIRU_GH_TOKEN
+      ].each { |key| allow(ENV).to receive(:[]).with(key).and_return(nil) }
+
+      with_forgery_protection do
+        visit "/login"
+        wait_for_react_app
+
+        expect(page).not_to have_button("Continue with Google")
+        expect(page).not_to have_button("Continue with GitHub")
+        expect(page).to have_button("Sign in", disabled: true)
       end
     end
 

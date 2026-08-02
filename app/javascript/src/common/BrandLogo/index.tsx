@@ -17,7 +17,11 @@ const BrandLogo = ({
   if (internalDeploymentEnabled()) {
     return (
       <span className={`inline-flex items-center gap-2 ${className}`}>
-        <img alt="Lanthos" className={imageClassName} src={LanthosMarkSVG} />
+        <img
+          alt="Lanthos"
+          className={`${imageClassName} dark:invert`}
+          src={LanthosMarkSVG}
+        />
         {!compact && (
           <span className="font-semibold tracking-tight text-foreground">
             Lanthos Ops
@@ -30,7 +34,7 @@ const BrandLogo = ({
   return (
     <img
       alt="Miru"
-      className={`${imageClassName} ${className}`}
+      className={`${imageClassName} dark:invert ${className}`}
       src={compact ? MiruLogoSVG : MiruLogoWithTextSVG}
     />
   );

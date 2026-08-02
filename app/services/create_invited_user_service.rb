@@ -16,6 +16,12 @@ class CreateInvitedUserService
     end
   end
 
+  class InternalAccessDenied < StandardError
+    def message
+      "Invitation is not approved for this internal workspace."
+    end
+  end
+
   def initialize(token, current_user = nil)
     @token = token
     @success = true
@@ -28,6 +34,7 @@ class CreateInvitedUserService
 
   def process
     invitation_valid!
+    internal_recipient_valid!
     user_valid!
     ActiveRecord::Base.transaction do
       update_invitation!
@@ -60,6 +67,13 @@ class CreateInvitedUserService
       if !(current_user.nil? || current_user.email == invitation.recipient_email)
         raise InvalidInvitaion
       end
+    end
+
+    def internal_recipient_valid!
+      return unless InternalDeployment.enabled?
+      return if InternalDeployment.signup_email_allowed?(invitation.recipient_email)
+
+      raise InternalAccessDenied
     end
 
     def update_invitation!

@@ -77,6 +77,22 @@ RSpec.describe "Api::V1::Mobile::Otps", type: :request do
     expect(json_response["error"]).to eq("Invalid OTP")
   end
 
+  it "does not return a mobile token after internal access is removed" do
+    pending_token = MobileOtp::ChallengeToken.issue(
+      { "company_id" => company.id, "phone" => customer.phone, "user_id" => customer.id },
+      code: "123456"
+    )
+    allow(ENV).to receive(:[]).and_call_original
+    allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+    allow(ENV).to receive(:fetch).and_call_original
+    allow(ENV).to receive(:fetch).with("MIRU_ALLOWED_SIGNUP_EMAILS", "").and_return("owner@example.com")
+
+    post "/api/v1/mobile/otp/verify", params: { pending_token:, code: "123456" }
+
+    expect(response).to have_http_status(:unprocessable_content)
+    expect(json_response).not_to have_key("user")
+  end
+
   it "requests OTP through MSG91 when widget credentials are configured outside test" do
     allow(Rails.env).to receive(:test?).and_return(false)
     send_stub = stub_request(:post, "https://control.msg91.com/api/v5/widget/sendOtp")

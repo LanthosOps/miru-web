@@ -31,7 +31,7 @@ module MobileOtp
       companies = companies_for(users)
       company = selected_company(users, companies)
       user = users.detect { |current_user| current_user.employed_at?(company&.id) }
-      unless company && user
+      unless company && user && InternalDeployment.authenticated_user_allowed?(user)
         return RequestResult.new(body: issue_dummy_challenge, status: 202)
       end
 
@@ -55,6 +55,7 @@ module MobileOtp
       user = User.kept.find_by(id: payload.fetch("user_id"))
       company = Company.find_by(id: payload.fetch("company_id"))
       raise ChallengeToken::InvalidTokenError unless user && company && user.employed_at?(company.id)
+      raise ChallengeToken::InvalidTokenError unless InternalDeployment.authenticated_user_allowed?(user)
 
       user.update!(current_workspace_id: company.id) if user.current_workspace_id != company.id
       VerificationResult.new(user:, company:)

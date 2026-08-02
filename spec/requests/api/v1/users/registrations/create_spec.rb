@@ -73,6 +73,8 @@ RSpec.describe "Api::V1::Users::Registrations#create", type: :request do
     end
 
     it "rejects an email outside the configured signup allowlist" do
+      allow(ENV).to receive(:[]).and_call_original
+      allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
       allow(ENV).to receive(:fetch).and_call_original
       allow(ENV).to receive(:fetch)
         .with("MIRU_ALLOWED_SIGNUP_EMAILS", "")
@@ -89,6 +91,8 @@ RSpec.describe "Api::V1::Users::Registrations#create", type: :request do
     end
 
     it "allows a configured signup email case-insensitively" do
+      allow(ENV).to receive(:[]).and_call_original
+      allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
       allow(ENV).to receive(:fetch).and_call_original
       allow(ENV).to receive(:fetch)
         .with("MIRU_ALLOWED_SIGNUP_EMAILS", "")

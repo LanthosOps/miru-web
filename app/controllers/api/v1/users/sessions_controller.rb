@@ -5,9 +5,11 @@ class Api::V1::Users::SessionsController < Devise::SessionsController
   include Authenticable
   include AuthResponsePayload
   include CurrentCompanyConcern
+  include InternalDeploymentAccess
   include SameOriginAuthentication
 
   before_action :authenticate_user_using_x_auth_token, only: :me
+  before_action :enforce_internal_deployment_allowlist!, only: :me
   before_action :reject_cross_origin_authentication!, only: :create
 
   respond_to :json
@@ -144,7 +146,7 @@ class Api::V1::Users::SessionsController < Devise::SessionsController
       options = ::WebAuthn::RelyingParty.new(
         allowed_origins: [request.base_url],
         id: request.host,
-        name: "Miru"
+        name: InternalDeployment.enabled? ? "Lanthos Ops" : "Miru"
       ).options_for_authentication(
         allow: user.passkeys.pluck(:external_id),
         user_verification: "preferred"

@@ -113,6 +113,7 @@ export const SETTINGS = [
     Component: Automation,
     category: "personal",
     isTab: true,
+    hiddenForInternalWorkspace: true,
   },
   // Uncomment when Integrating with API
   // {

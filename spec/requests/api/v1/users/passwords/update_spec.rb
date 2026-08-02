@@ -35,6 +35,27 @@ RSpec.describe "Api::V1::Users::Passwords#update", type: :request do
         expect(response).to have_http_status(:ok)
         expect(cli_session.reload.revoked_at).to be_present
       end
+
+      it "does not issue a session when internal access was removed" do
+        token = user.send(:set_reset_password_token)
+        original_password = user.encrypted_password
+        allow(ENV).to receive(:[]).and_call_original
+        allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+        allow(ENV).to receive(:fetch).and_call_original
+        allow(ENV).to receive(:fetch).with("MIRU_ALLOWED_SIGNUP_EMAILS", "").and_return("owner@example.com")
+
+        send_request :put, api_v1_users_reset_password_path, params: {
+          user: {
+            reset_password_token: token,
+            password: "newpassword",
+            password_confirmation: "newpassword"
+          }
+        }
+
+        expect(response).to have_http_status(:forbidden)
+        expect(json_response["error"]).to include("not approved")
+        expect(user.reload.encrypted_password).to eq(original_password)
+      end
     end
 
     context "with invalid token" do

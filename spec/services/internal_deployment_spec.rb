@@ -15,6 +15,13 @@ RSpec.describe InternalDeployment do
     expect(described_class.signup_email_allowed?("anyone@example.com")).to eq(true)
   end
 
+  it "keeps upstream signup open when internal mode is off and an allowlist remains configured" do
+    allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("false")
+    allow(ENV).to receive(:fetch).with("MIRU_ALLOWED_SIGNUP_EMAILS", "").and_return("owner@example.com")
+
+    expect(described_class.signup_email_allowed?("anyone@example.com")).to eq(true)
+  end
+
   it "fails closed when internal mode has no allowlist" do
     allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
     allow(ENV).to receive(:fetch).with("MIRU_ALLOWED_SIGNUP_EMAILS", "").and_return("")

@@ -8,6 +8,7 @@ import { analyticsApi } from "apis/api";
 import { Paths, Roles } from "../../constants";
 import { useUserContext } from "../../context/UserContext";
 import { useIsMobile } from "../../hooks/use-mobile";
+import { productName } from "../../lib/internalDeployment";
 import { currencyFormat } from "helpers";
 import AnalyticsPageLayout from "./components/AnalyticsPageLayout";
 import { AnalyticsRestrictedState } from "./components/AnalyticsStates";
@@ -246,8 +247,8 @@ const RevenueForecastPage: React.FC = () => {
           <CardHeader>
             <CardTitle>No revenue history yet</CardTitle>
             <CardDescription>
-              Once invoices are paid, Miru will start plotting collected revenue
-              and projecting the next months.
+              Once invoices are paid, {productName()} will start plotting
+              collected revenue and projecting the next months.
             </CardDescription>
           </CardHeader>
           <CardContent>

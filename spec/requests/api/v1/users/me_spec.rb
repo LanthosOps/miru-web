@@ -51,6 +51,18 @@ RSpec.describe "Api::V1::Users#me", type: :request do
       expect(json_response["user"]).not_to have_key("token")
     end
 
+    it "rejects a legacy session for a user outside the internal allowlist" do
+      allow(ENV).to receive(:[]).and_call_original
+      allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+      allow(ENV).to receive(:fetch).and_call_original
+      allow(ENV).to receive(:fetch).with("MIRU_ALLOWED_SIGNUP_EMAILS", "").and_return("owner@example.com")
+
+      get api_v1_users_me_path, headers: auth_headers(user)
+
+      expect(response).to have_http_status(:forbidden)
+      expect(json_response["error"]).to include("not approved")
+    end
+
     it "returns company info" do
       get api_v1_users_me_path, headers: auth_headers(user)
       expect(json_response["company"]["id"]).to eq(company.id)
@@ -104,6 +116,19 @@ RSpec.describe "Api::V1::Users#me", type: :request do
       expect(json_response["user"]["email"]).to eq(user.email)
       expect(json_response["company"]["id"]).to eq(company.id)
       expect(json_response["company_role"]).to eq("admin")
+    end
+
+    it "rejects token authentication outside the internal allowlist" do
+      allow(ENV).to receive(:[]).and_call_original
+      allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+      allow(ENV).to receive(:fetch).and_call_original
+      allow(ENV).to receive(:fetch).with("MIRU_ALLOWED_SIGNUP_EMAILS", "").and_return("owner@example.com")
+      _, cli_token = CliSession.issue_for(user:, company:)
+
+      get api_v1_users_me_path, headers: cli_auth_headers(cli_token)
+
+      expect(response).to have_http_status(:forbidden)
+      expect(json_response["error"]).to include("not approved")
     end
   end
 
