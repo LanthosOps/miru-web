@@ -2,9 +2,12 @@
 
 class ApplicationMailer < ActionMailer::Base
   append_view_path Rails.root.join("app", "views", "mailers")
-  SUPPORT_EMAIL = "support@getmiru.com"
+  MIRU_SUPPORT_EMAIL = "support@getmiru.com"
+  LANTHOS_SUPPORT_EMAIL = "support@datapulsetech.ai"
+  SUPPORT_EMAIL = InternalDeployment.enabled? ? LANTHOS_SUPPORT_EMAIL : MIRU_SUPPORT_EMAIL
+  DEFAULT_SENDER_NAME = InternalDeployment.enabled? ? "Lanthos Ops" : "Miru"
   default(
-    from: ENV["DEFAULT_MAILER_SENDER"].presence || "Miru <#{SUPPORT_EMAIL}>",
+    from: ENV["DEFAULT_MAILER_SENDER"].presence || "#{DEFAULT_SENDER_NAME} <#{SUPPORT_EMAIL}>",
     reply_to: ENV["REPLY_TO_EMAIL"].presence || SUPPORT_EMAIL
   )
   layout "mailer"
@@ -107,6 +110,7 @@ class ApplicationMailer < ActionMailer::Base
       return company.name if company&.name.present?
       return @company if @company.is_a?(String) && @company.present?
       return company_details[:name] if company_details&.[](:name).present?
+      return "Lanthos Ops" if InternalDeployment.enabled?
 
       t("mailers.layout.brand")
     end

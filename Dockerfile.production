@@ -95,5 +95,9 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:3000/health || exit 1
 
+# Apply the same database preparation and internal safety gate as the primary
+# production image before Falcon or Solid Queue starts.
+ENTRYPOINT ["/app/bin/docker-entrypoint"]
+
 # Start server
 CMD ["bundle", "exec", "falcon", "host"]

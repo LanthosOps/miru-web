@@ -1,8 +1,13 @@
-<% content_for :email_preheader, t("mailers.user_invitation_mailer.send_user_invitation.preheader") %>
+<% internal_deployment = InternalDeployment.enabled? %>
+<% content_for :email_preheader, internal_deployment ? "You have been invited to an approved Lanthos Ops workspace." : t("mailers.user_invitation_mailer.send_user_invitation.preheader") %>
 <% content_for :email_eyebrow, t("mailers.user_invitation_mailer.send_user_invitation.eyebrow") %>
-<% content_for :email_title, t("mailers.user_invitation_mailer.send_user_invitation.title") %>
+<% content_for :email_title, internal_deployment ? "Join your Lanthos Ops workspace" : t("mailers.user_invitation_mailer.send_user_invitation.title") %>
 <% content_for :email_subtitle do %>
-  <%= t("mailers.user_invitation_mailer.send_user_invitation.subtitle_html", sender_name: @sender_details&.[](:name), company_name: @company_details&.[](:name)).html_safe %>
+  <% if internal_deployment %>
+    <strong><%= @sender_details&.[](:name) %></strong> invited you to join <strong><%= @company_details&.[](:name) %></strong> in Lanthos Ops.
+  <% else %>
+    <%= t("mailers.user_invitation_mailer.send_user_invitation.subtitle_html", sender_name: @sender_details&.[](:name), company_name: @company_details&.[](:name)).html_safe %>
+  <% end %>
 <% end %>
 
 <div class="email-highlight">
@@ -20,6 +25,7 @@
   { label: t("mailers.labels.members"), value: t("mailers.user_invitation_mailer.send_user_invitation.workspace_members", count: @company_details&.[](:employee_count)) }
 ] %>
 
-<%= render "shared/mailer/button", href: invitations_accepts_url(token: @token), label: t("mailers.actions.join_miru") %>
+<%= render "shared/mailer/button", href: invitations_accepts_url(token: @token), label: internal_deployment ? "Join Lanthos Ops" : t("mailers.actions.join_miru") %>
 
-<p class="email-muted" style="margin-top: 18px;"><%= t("mailers.user_invitation_mailer.send_user_invitation.support_html", support_email: t("mailers.layout.footer_contact")).html_safe %></p>
+<% support_email = internal_deployment ? ApplicationMailer::LANTHOS_SUPPORT_EMAIL : t("mailers.layout.footer_contact") %>
+<p class="email-muted" style="margin-top: 18px;"><%= t("mailers.user_invitation_mailer.send_user_invitation.support_html", support_email:).html_safe %></p>

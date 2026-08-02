@@ -3,12 +3,4 @@ set -euo pipefail
 
 bundle exec rails db:prepare
 bundle exec rails data:migrate
-
-case "${MIRU_INTERNAL_DEPLOYMENT:-}" in
-  1|true|TRUE|yes|YES|on|ON)
-    if [[ -n "${MIRU_BOOTSTRAP_OWNER_PASSWORD:-}" ]]; then
-      bundle exec rake internal_deployment:bootstrap_owner
-    fi
-    bundle exec rake internal_deployment:verify
-    ;;
-esac
+bundle exec rake internal_deployment:startup

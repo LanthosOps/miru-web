@@ -47,6 +47,20 @@ RSpec.describe UserInvitationMailer, type: :mailer do
       expect(body).to include(user.full_name)
     end
 
+    context "with internal deployment branding" do
+      before do
+        allow(ENV).to receive(:[]).and_call_original
+        allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+      end
+
+      it "presents the invitation as Lanthos Ops" do
+        expect(mail.subject).to eq("You're invited to Lanthos Ops")
+        expect(body).to include("Join Lanthos Ops")
+        expect(body).to include("support@datapulsetech.ai")
+        expect(body).not_to include("Miru")
+      end
+    end
+
     it "uses the recipient locale when available" do
       create(:user, email: invitation.recipient_email, locale: "te")
 

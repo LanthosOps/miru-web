@@ -3,6 +3,21 @@
 require "rails_helper"
 
 RSpec.describe "Auth flows", type: :system, js: true do
+  it "routes internal signup attempts to the Lanthos owner sign-in" do
+    allow(ENV).to receive(:[]).and_call_original
+    allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+
+    with_forgery_protection do
+      visit "/signup"
+
+      expect(page).to have_current_path("/user/sign_in", wait: 10)
+      expect(page).to have_text("Lanthos Ops")
+      expect(page).to have_text("Sign in to your workspace")
+      expect(page).not_to have_text("Create your account")
+      expect(page).not_to have_text("Miru")
+    end
+  end
+
   it "allows a visitor to sign up and reach email verification" do
     with_forgery_protection do
       visit "/signup"

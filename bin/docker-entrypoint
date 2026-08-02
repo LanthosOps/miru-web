@@ -8,7 +8,7 @@ fi
 
 # If running the Rails server then create or migrate the existing database.
 verify_internal_deployment=false
-if [[ "${*}" == *"falcon host"* ]] || [[ "${*}" == *"falcon serve"* ]] || [[ "${*}" == *"puma"* ]] || ([ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]); then
+if [[ "${*}" == *"falcon host"* ]] || [[ "${*}" == *"falcon serve"* ]] || [[ "${*}" == *"puma"* ]] || [[ "${*}" == *"bin/rails server"* ]]; then
   ./bin/rails db:prepare
   verify_internal_deployment=true
 fi
@@ -20,9 +20,10 @@ if [[ "${*}" == *"solid_queue:start"* ]]; then
 fi
 
 if [[ "${verify_internal_deployment}" == "true" ]]; then
-  case "${MIRU_INTERNAL_DEPLOYMENT:-}" in
-    1|true|TRUE|yes|YES|on|ON) bundle exec rake internal_deployment:verify ;;
-  esac
+  # Rails owns flag parsing and the optional one-time owner bootstrap. Keeping
+  # this unconditional prevents shell and application Boolean semantics from
+  # drifting apart.
+  bundle exec rake internal_deployment:startup
 fi
 
 exec "${@}"

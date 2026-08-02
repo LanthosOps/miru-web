@@ -10,7 +10,11 @@ class UserInvitationMailer < ApplicationMailer
     @user_already_exists = params[:user_already_exists]
 
     with_recipient_locale(User.find_by(email: recipient)) do
-      subject = I18n.t("mailers.user_invitation_mailer.send_user_invitation.subject")
+      subject = if InternalDeployment.enabled?
+        "You're invited to Lanthos Ops"
+      else
+        I18n.t("mailers.user_invitation_mailer.send_user_invitation.subject")
+      end
       mail(to: recipient, subject:, reply_to: @sender_details&.[](:email).presence || default_reply_to_address)
     end
   end

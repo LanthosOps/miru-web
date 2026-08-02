@@ -38,5 +38,26 @@ RSpec.describe "Api::V1::Users::Confirmations#create", type: :request do
         )
       end
     end
+
+    context "with an unapproved internal address" do
+      before do
+        allow(ENV).to receive(:[]).and_call_original
+        allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+        allow(ENV).to receive(:fetch).and_call_original
+        allow(ENV).to receive(:fetch).with("MIRU_ALLOWED_SIGNUP_EMAILS", "").and_return("owner@example.com")
+        user.update!(confirmed_at: nil)
+      end
+
+      it "returns the generic response without issuing confirmation instructions" do
+        expect(User).not_to receive(:send_confirmation_instructions)
+
+        post api_v1_users_resend_confirmation_email_path({ user: { email: user.email } })
+
+        expect(response).to have_http_status(:ok)
+        expect(JSON.parse(response.body)).to include(
+          "notice" => "A confirmation email has been sent to #{user.email}."
+        )
+      end
+    end
   end
 end

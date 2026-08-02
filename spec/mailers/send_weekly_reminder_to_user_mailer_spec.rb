@@ -50,6 +50,28 @@ RSpec.describe SendWeeklyReminderToUserMailer, type: :mailer do
       expect(body).to include("text-decoration: none")
     end
 
+    context "with internal deployment branding" do
+      before do
+        allow(ENV).to receive(:[]).and_call_original
+        allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+      end
+
+      it "presents the reminder as Lanthos Ops" do
+        mailer = described_class.with(
+          recipients: user.email,
+          name: user.full_name,
+          start_date:,
+          end_date:,
+          company_name: company.name
+        ).notify_user_about_missed_entries
+        body = mailer.html_part&.body&.decoded || mailer.body.decoded
+
+        expect(mailer.subject).to eq("Complete your Lanthos Ops timesheet for last week")
+        expect(body).to include("Open Lanthos Ops")
+        expect(body).not_to include("Miru")
+      end
+    end
+
     context "with notification preferences" do
       context "when user has notifications enabled" do
         let!(:notification_preference) do

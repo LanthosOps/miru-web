@@ -9,7 +9,7 @@ employee product.
 
 - Lanthos repository: `https://github.com/LanthosOps/miru-web.git`
 - Upstream repository: `https://github.com/saeloun/miru-web.git`
-- Initial Lanthos integration baseline: upstream `develop` at `4a60e7c`
+- Initial Lanthos integration baseline: upstream `develop` at `c76136a92448bccc6d4873c26eda231481e5a0c1`
 - Protected Lanthos integration branch: `develop`
 
 Configure the upstream remote without changing `origin`:
@@ -60,7 +60,7 @@ bundle exec rspec spec/services/internal_deployment_preflight_spec.rb \
   spec/requests/webhooks/stripe_controller_spec.rb \
   spec/jobs/sync_stripe_subscriptions_job_spec.rb \
   spec/jobs/sync_stripe_subscription_company_job_spec.rb
-bundle exec rspec spec/system/authentication spec/system/settings/billing_spec.rb
+bundle exec rspec spec/system/auth spec/system/users spec/system/settings/billing_spec.rb
 bundle exec rubocop
 pnpm lint
 git diff --check

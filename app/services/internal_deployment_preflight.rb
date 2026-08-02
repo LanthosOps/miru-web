@@ -20,7 +20,7 @@ class InternalDeploymentPreflight
     return ["MIRU_INTERNAL_DEPLOYMENT must be true"] unless InternalDeployment.enabled?
     return ["MIRU_ALLOWED_SIGNUP_EMAILS must contain at least one approved owner"] if InternalDeployment.allowed_emails.empty?
 
-    [billing_links_error, invitations_error, owner_error].compact
+    [billing_links_error, invitations_error, legacy_devise_invitations_error, owner_error].compact
   end
 
   private
@@ -55,6 +55,17 @@ class InternalDeploymentPreflight
 
       identifiers = invitations.limit(20).pluck(:id, :recipient_email).map { |id, email| "#{id}:#{email}" }.join(", ")
       "Pending invitations for non-approved recipients must be revoked or allowed to expire: #{identifiers}"
+    end
+
+    def legacy_devise_invitations_error
+      users = User.kept
+        .where.not(invitation_token: [nil, ""])
+        .where(invitation_accepted_at: nil)
+        .where.not("LOWER(email) IN (?)", InternalDeployment.allowed_emails)
+      return unless users.exists?
+
+      identifiers = users.limit(20).pluck(:id, :email).map { |id, email| "#{id}:#{email}" }.join(", ")
+      "Legacy Devise invitations for non-approved recipients must be revoked: #{identifiers}"
     end
 
     def owner_error

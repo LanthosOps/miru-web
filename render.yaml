@@ -89,12 +89,13 @@ services:
   - type: web
     name: miru-web
     runtime: docker
-    repo: https://github.com/saeloun/miru-web
+    repo: https://github.com/LanthosOps/miru-web
     plan: starter
-    branch: production
+    branch: develop
     autoDeploy: false
     dockerfilePath: ./Dockerfile
     dockerContext: .
+    preDeployCommand: ./bin/render-predeploy
     healthCheckPath: /health
     envVars:
       - fromGroup: miru-shared
@@ -113,9 +114,9 @@ services:
   - type: worker
     name: miru-worker
     runtime: docker
-    repo: https://github.com/saeloun/miru-web
+    repo: https://github.com/LanthosOps/miru-web
     plan: starter
-    branch: production
+    branch: develop
     autoDeploy: false
     dockerfilePath: ./Dockerfile
     dockerContext: .

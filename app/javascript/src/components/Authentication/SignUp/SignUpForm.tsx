@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import {
   githubOauthEnabled,
   googleOauthEnabled,
+  internalDeploymentEnabled,
 } from "../../../lib/internalDeployment";
 
 import PrivacyPolicyModal from "./PrivacyPolicyModal";
@@ -36,6 +37,7 @@ const SignUpForm = () => {
   const { locale } = useUserContext();
   const googleOauthAvailable = googleOauthEnabled();
   const githubOauthAvailable = githubOauthEnabled();
+  const isInternalDeployment = internalDeploymentEnabled();
   const oauthAvailable = googleOauthAvailable || githubOauthAvailable;
   const [privacyModal, setPrivacyModal] = useState(false);
   const [termsOfServiceModal, setTermsOfServiceModal] = useState(false);
@@ -203,7 +205,10 @@ const SignUpForm = () => {
           <Formik
             key={locale}
             validateOnBlur
-            initialValues={signUpFormInitialValues}
+            initialValues={{
+              ...signUpFormInitialValues,
+              isAgreedTermsOfServices: isInternalDeployment,
+            }}
             validateOnChange={false}
             validationSchema={buildSignUpFormValidationSchema()}
             onSubmit={handleSignUpFormSubmit}
@@ -313,44 +318,53 @@ const SignUpForm = () => {
                       fieldTouched={touched.confirm_password}
                     />
                   </div>
-                  <div className="my-5 flex items-start gap-2 text-xs text-muted-foreground">
-                    <input
-                      checked={values.isAgreedTermsOfServices}
-                      className="mt-0.5 h-4 w-4 rounded border-border bg-background accent-primary"
-                      id="termsOfService"
-                      name="agreeToTerms"
-                      onChange={event => {
-                        setFieldValue(
-                          "isAgreedTermsOfServices",
-                          event.target.checked
-                        );
-                        setFieldTouched("isAgreedTermsOfServices", false);
-                      }}
-                      type="checkbox"
-                    />
-                    <label className="leading-5" htmlFor="termsOfService">
-                      {t("auth.signUp.agreePrefix")}{" "}
-                      <button
-                        className="text-foreground hover:text-primary"
-                        onClick={handleTermsOfService}
-                        type="button"
-                      >
-                        {t("auth.signUp.termsOfService")}
-                      </button>{" "}
-                      {t("auth.signUp.and")}{" "}
-                      <button
-                        className="text-foreground hover:text-primary"
-                        onClick={handlePrivacyPolicy}
-                        type="button"
-                      >
-                        {t("auth.signUp.privacyPolicy")}
-                      </button>
-                    </label>
-                  </div>
-                  <InputErrors
-                    fieldErrors={errors.isAgreedTermsOfServices}
-                    fieldTouched={touched.isAgreedTermsOfServices}
-                  />
+                  {isInternalDeployment ? (
+                    <p className="my-5 rounded-xl border border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
+                      Approved internal access only. Your account must match the
+                      owner allowlist.
+                    </p>
+                  ) : (
+                    <>
+                      <div className="my-5 flex items-start gap-2 text-xs text-muted-foreground">
+                        <input
+                          checked={values.isAgreedTermsOfServices}
+                          className="mt-0.5 h-4 w-4 rounded border-border bg-background accent-primary"
+                          id="termsOfService"
+                          name="agreeToTerms"
+                          onChange={event => {
+                            setFieldValue(
+                              "isAgreedTermsOfServices",
+                              event.target.checked
+                            );
+                            setFieldTouched("isAgreedTermsOfServices", false);
+                          }}
+                          type="checkbox"
+                        />
+                        <label className="leading-5" htmlFor="termsOfService">
+                          {t("auth.signUp.agreePrefix")}{" "}
+                          <button
+                            className="text-foreground hover:text-primary"
+                            onClick={handleTermsOfService}
+                            type="button"
+                          >
+                            {t("auth.signUp.termsOfService")}
+                          </button>{" "}
+                          {t("auth.signUp.and")}{" "}
+                          <button
+                            className="text-foreground hover:text-primary"
+                            onClick={handlePrivacyPolicy}
+                            type="button"
+                          >
+                            {t("auth.signUp.privacyPolicy")}
+                          </button>
+                        </label>
+                      </div>
+                      <InputErrors
+                        fieldErrors={errors.isAgreedTermsOfServices}
+                        fieldTouched={touched.isAgreedTermsOfServices}
+                      />
+                    </>
+                  )}
                   <div className="mb-3">
                     <button
                       type="submit"
@@ -368,13 +382,13 @@ const SignUpForm = () => {
             }}
           </Formik>
           <div className="mt-4">
-            {privacyModal && (
+            {!isInternalDeployment && privacyModal && (
               <PrivacyPolicyModal
                 isOpen={privacyModal}
                 onClose={() => setPrivacyModal(false)}
               />
             )}
-            {termsOfServiceModal && (
+            {!isInternalDeployment && termsOfServiceModal && (
               <TermsOfServiceModal
                 isOpen={termsOfServiceModal}
                 onClose={() => setTermsOfServiceModal(false)}
@@ -391,23 +405,25 @@ const SignUpForm = () => {
               </a>
             </span>
           </p>
-          <div className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-            <button
-              className="hover:text-foreground"
-              onClick={handlePrivacyPolicy}
-              type="button"
-            >
-              {t("auth.signIn.privacy")}
-            </button>
-            <span>•</span>
-            <button
-              className="hover:text-foreground"
-              onClick={handleTermsOfService}
-              type="button"
-            >
-              {t("auth.signIn.terms")}
-            </button>
-          </div>
+          {!isInternalDeployment && (
+            <div className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+              <button
+                className="hover:text-foreground"
+                onClick={handlePrivacyPolicy}
+                type="button"
+              >
+                {t("auth.signIn.privacy")}
+              </button>
+              <span>•</span>
+              <button
+                className="hover:text-foreground"
+                onClick={handleTermsOfService}
+                type="button"
+              >
+                {t("auth.signIn.terms")}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </AuthShell>

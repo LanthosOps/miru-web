@@ -40,6 +40,21 @@ RSpec.describe InternalDeploymentPreflight do
       .to raise_error(described_class::UnsafeConfiguration, /Pending invitations/)
   end
 
+  it "rejects unaccepted legacy Devise invitations outside the allowlist" do
+    company = create(:company)
+    owner = create(:user, email: "owner@example.com", current_workspace_id: company.id)
+    create(:employment, company:, user: owner)
+    owner.add_role(:owner, company)
+    create(:user, email: "employee@example.com").update_columns(
+      invitation_token: "legacy-token",
+      invitation_sent_at: Time.current,
+      invitation_accepted_at: nil
+    )
+
+    expect { described_class.verify! }
+      .to raise_error(described_class::UnsafeConfiguration, /Legacy Devise invitations/)
+  end
+
   it "rejects a deployment without an approved company owner" do
     create(:company)
 

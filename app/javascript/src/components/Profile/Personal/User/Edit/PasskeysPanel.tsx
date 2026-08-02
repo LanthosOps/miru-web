@@ -2,6 +2,10 @@ import React from "react";
 
 import { Fingerprint, ShieldCheck, Trash } from "phosphor-react";
 import { i18n } from "../../../../../i18n";
+import {
+  internalDeploymentEnabled,
+  productName,
+} from "../../../../../lib/internalDeployment";
 import { Button } from "../../../../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../../ui/card";
 import { Switch } from "../../../../ui/switch";
@@ -59,7 +63,11 @@ const PasskeysPanel = ({
               {i18n.t("passkeys.requirementTitle")}
             </div>
             <p className="text-sm text-muted-foreground">
-              {i18n.t("passkeys.requirementDescription")}
+              {internalDeploymentEnabled()
+                ? `After your password, ${productName()} will require a passkey to complete sign in.`
+                : i18n.t("passkeys.requirementDescription", {
+                    productName: productName(),
+                  })}
             </p>
           </div>
           <Switch

@@ -57,10 +57,19 @@ RSpec.describe "Root#index", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
-    it "provides the Devise sign-in route used by password reset redirects" do
+    it "serves the React password editor without exposing Devise mutations" do
       send_request :get, edit_user_password_path
 
-      expect(response).to redirect_to(new_user_session_path)
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "does not expose parallel Devise password or invitation mutation routes" do
+      expect {
+        Rails.application.routes.recognize_path("/users/password", method: :post)
+      }.to raise_error(ActionController::RoutingError)
+      expect {
+        Rails.application.routes.recognize_path("/users/invitation", method: :post)
+      }.to raise_error(ActionController::RoutingError)
     end
   end
 end
