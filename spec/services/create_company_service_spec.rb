@@ -53,5 +53,23 @@ RSpec.describe CreateCompanyService do
 
       expect(company.trial_active?).to be(true)
     end
+
+    it "grants full access without a trial for internal deployments" do
+      allow(ENV).to receive(:[]).and_call_original
+      allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+
+      company = nil
+      expect do
+        expect do
+          company = described_class.new(user, params: company_params).process
+        end.not_to have_enqueued_mail(SubscriptionMailer, :trial_started)
+      end.not_to change { Ahoy::Event.where(name: "trial_started").count }
+
+      expect(company).to be_billing_exempt
+      expect(company.trial_started_at).to be_nil
+      expect(company.trial_ends_at).to be_nil
+      expect(company.pro_access?).to be(true)
+      expect(company.team_member_limit).to eq(Float::INFINITY)
+    end
   end
 end

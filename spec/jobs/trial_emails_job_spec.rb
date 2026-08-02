@@ -33,6 +33,14 @@ RSpec.describe TrialEmailsJob do
     expect { described_class.perform_now }.not_to have_enqueued_mail(SubscriptionMailer)
   end
 
+  it "sends no trial emails in an internal deployment" do
+    allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+    start_trial(days_ago: 2)
+
+    expect { described_class.perform_now }.not_to have_enqueued_mail(SubscriptionMailer)
+    expect(company.reload.trial_email_last_sent_on).to be_nil
+  end
+
   it "sends the getting started email when only the Render monthly price is configured" do
     %w[STRIPE_PLAN_PAGE_URL STRIPE_SUBSCRIPTION_PRICE_ID STRIPE_SUBSCRIPTION_PRICE_ID_MONTHLY
        STRIPE_SUBSCRIPTION_PRICE_ID_YEARLY STRIPE_YEARLY_PRICE_ID].each do |key|

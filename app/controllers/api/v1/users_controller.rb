@@ -34,6 +34,7 @@ class Api::V1::UsersController < Api::V1::BaseController
           "address" => current_company&.current_address,
           "logo" => current_company&.company_logo,
           "pro_access" => current_company&.pro_access?,
+          "billing_exempt" => current_company&.internal_deployment_access?,
           "plan_tier" => current_company&.plan_tier,
           "current_plan_label" => current_company&.current_plan_label,
           "team_member_limit" => current_company&.team_member_limit,

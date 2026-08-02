@@ -20,6 +20,7 @@ class TrialEmailsJob < ApplicationJob
   end
 
   def perform
+    return if Company.internal_deployment?
     return unless self.class.billing_configured?
 
     companies_on_trial.find_each do |company|

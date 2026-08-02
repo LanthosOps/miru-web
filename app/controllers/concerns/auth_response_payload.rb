@@ -39,7 +39,7 @@ module AuthResponsePayload
         "logo" => company.company_logo,
         "pro_access" => company.pro_access?,
         "current_plan_label" => company.current_plan_label,
-        "billing_exempt" => company.billing_exempt?,
+        "billing_exempt" => company.internal_deployment_access?,
         "trial_active" => company.trial_active?,
         "trial_ends_at" => company.trial_ends_at,
         "trial_expired" => company.trial_expired?,

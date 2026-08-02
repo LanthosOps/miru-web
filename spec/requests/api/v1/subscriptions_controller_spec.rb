@@ -184,9 +184,44 @@ RSpec.describe Api::V1::SubscriptionsController, type: :request do
       expect(response).to have_http_status(:unprocessable_content)
       expect(JSON.parse(response.body)["errors"]).to eq("Your workspace is not eligible for a Pro trial")
     end
+
+    it "does not start a trial for an internal workspace" do
+      company.update!(billing_exempt: true)
+
+      expect do
+        post "/api/v1/subscription/trial", headers: headers
+      end.not_to change { Ahoy::Event.where(name: "trial_started").count }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(JSON.parse(response.body)["errors"]).to eq("Billing is disabled for internal workspaces")
+      expect(company.reload.trial_started_at).to be_nil
+    end
   end
 
   describe "POST /api/v1/subscription/checkout" do
+    it "does not open checkout when internal deployment mode is enabled" do
+      allow(ENV).to receive(:[]).and_call_original
+      allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+      allow(Stripe::Checkout::Session).to receive(:create)
+
+      post "/api/v1/subscription/checkout", headers: headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(JSON.parse(response.body)["errors"]).to eq("Billing is disabled for internal workspaces")
+      expect(Stripe::Checkout::Session).not_to have_received(:create)
+    end
+
+    it "does not open checkout for an internal workspace" do
+      company.update!(billing_exempt: true)
+      allow(Stripe::Checkout::Session).to receive(:create)
+
+      post "/api/v1/subscription/checkout", headers: headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(JSON.parse(response.body)["errors"]).to eq("Billing is disabled for internal workspaces")
+      expect(Stripe::Checkout::Session).not_to have_received(:create)
+    end
+
     it "returns stripe plan page url when configured" do
       allow(ENV).to receive(:[]).and_call_original
       allow(ENV).to receive(:[]).with("STRIPE_PLAN_PAGE_URL").and_return("https://buy.stripe.com/test_plan")
@@ -373,6 +408,17 @@ RSpec.describe Api::V1::SubscriptionsController, type: :request do
   end
 
   describe "POST /api/v1/subscription/portal" do
+    it "does not open the Stripe portal for an internal workspace" do
+      company.update!(billing_exempt: true, stripe_customer_id: "cus_internal")
+      allow(Stripe::BillingPortal::Session).to receive(:create)
+
+      post "/api/v1/subscription/portal", headers: headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(JSON.parse(response.body)["errors"]).to eq("Billing is disabled for internal workspaces")
+      expect(Stripe::BillingPortal::Session).not_to have_received(:create)
+    end
+
     it "returns 422 when customer does not exist" do
       post "/api/v1/subscription/portal", headers: headers
 

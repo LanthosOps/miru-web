@@ -54,6 +54,23 @@ RSpec.describe "Api::V1::Companies::update", type: :request do
         expect(json_response["notice"]).to eq(I18n.t("companies.update.success"))
       end
 
+      it "preserves effective internal access in the updated company payload" do
+        allow(ENV).to receive(:[]).and_call_original
+        allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+
+        send_request(
+          :put,
+          "#{api_v1_companies_path}/#{company[:id]}",
+          params: { company: { name: "Internal Company" } },
+          headers: auth_headers(user)
+        )
+
+        expect(company.reload).not_to be_billing_exempt
+        expect(json_response.dig("company", "billing_exempt")).to eq(true)
+        expect(json_response.dig("company", "pro_access")).to eq(true)
+        expect(json_response.dig("company", "current_plan_label")).to eq("free_pro")
+      end
+
       it "updates the company" do
         company.reload
         company.current_address.reload

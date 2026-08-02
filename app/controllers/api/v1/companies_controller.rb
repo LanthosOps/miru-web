@@ -19,7 +19,7 @@ class Api::V1::CompaniesController < Api::V1::ApplicationController
     company = CreateCompanyService.new(current_user, params: company_params).process
 
     if company
-      render json: { notice: I18n.t("companies.create.success"), company: }
+      render json: { notice: I18n.t("companies.create.success"), company: company_payload(company) }
     end
   end
 
@@ -27,11 +27,23 @@ class Api::V1::CompaniesController < Api::V1::ApplicationController
     authorize current_company
 
     if current_company.update!(company_params)
-      render json: { notice: I18n.t("companies.update.success"), company: current_company }
+      render json: { notice: I18n.t("companies.update.success"), company: company_payload(current_company) }
     end
   end
 
   private
+
+    def company_payload(company)
+      company.as_json.merge(
+        "billing_exempt" => company.internal_deployment_access?,
+        "pro_access" => company.pro_access?,
+        "current_plan_label" => company.current_plan_label,
+        "team_member_limit" => company.team_member_limit,
+        "used_team_seats" => company.used_team_seats,
+        "reserved_team_seats" => company.reserved_team_seats,
+        "team_member_limit_reached" => company.team_member_limit_reached?
+      )
+    end
 
     def company_params
       permitted_params = params.require(:company).permit(

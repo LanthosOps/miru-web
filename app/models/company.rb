@@ -60,6 +60,16 @@ class Company < ApplicationRecord
   # scopes
   scope :with_kept_employments, -> { merge(Employment.kept) }
 
+  before_validation :enable_internal_deployment_access, on: :create
+
+  def self.internal_deployment?
+    ActiveModel::Type::Boolean.new.cast(ENV["MIRU_INTERNAL_DEPLOYMENT"])
+  end
+
+  def internal_deployment_access?
+    self.class.internal_deployment? || billing_exempt?
+  end
+
   def client_list
     clients.kept.includes(:invoices, :addresses, client_members: :user).map do |client|
       {
@@ -100,7 +110,7 @@ class Company < ApplicationRecord
   end
 
   def team_member_limit
-    return Float::INFINITY if billing_exempt?
+    return Float::INFINITY if internal_deployment_access?
 
     pro_access? ? 100 : 3
   end
@@ -146,11 +156,11 @@ class Company < ApplicationRecord
   end
 
   def trial_available?
-    !billing_exempt? && plan_tier != "paid" && trial_started_at.blank?
+    !internal_deployment_access? && plan_tier != "paid" && trial_started_at.blank?
   end
 
   def pro_access?
-    billing_exempt? || plan_tier == "paid" || trial_active?
+    internal_deployment_access? || plan_tier == "paid" || trial_active?
   end
 
   def stripe_subscription_active?
@@ -167,7 +177,7 @@ class Company < ApplicationRecord
   end
 
   def current_plan_label
-    return "free_pro" if billing_exempt?
+    return "free_pro" if internal_deployment_access?
     return "paid" if plan_tier == "paid"
     return "pro_trial" if trial_active?
 
@@ -246,6 +256,14 @@ class Company < ApplicationRecord
   end
 
   private
+
+    def enable_internal_deployment_access
+      return unless self.class.internal_deployment?
+
+      self.billing_exempt = true
+      self.trial_started_at = nil
+      self.trial_ends_at = nil
+    end
 
     def validate_attachment_constraints
       ATTACHMENT_CONTENT_TYPES.each do |name, allowed_content_types|

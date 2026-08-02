@@ -9,6 +9,7 @@ class Api::V1::SubscriptionsController < Api::V1::ApplicationController
 
   def checkout
     authorize current_company, policy_class: CompanyPolicy
+    return render_internal_billing_disabled if internal_billing_disabled?
 
     if current_company.plan_tier == "paid"
       render json: { errors: I18n.t("subscriptions.already_subscribed") }, status: 422
@@ -50,6 +51,7 @@ class Api::V1::SubscriptionsController < Api::V1::ApplicationController
 
   def portal
     authorize current_company, policy_class: CompanyPolicy
+    return render_internal_billing_disabled if internal_billing_disabled?
 
     if current_company.stripe_customer_id.blank?
       render json: { errors: I18n.t("subscriptions.no_billing_customer") }, status: 422
@@ -68,6 +70,7 @@ class Api::V1::SubscriptionsController < Api::V1::ApplicationController
 
   def trial
     authorize current_company, policy_class: CompanyPolicy
+    return render_internal_billing_disabled if internal_billing_disabled?
 
     current_company.start_pro_trial!
     Analytics::TrackingService.new(user: current_user).track_trial_started(current_company, source: "billing")
@@ -80,6 +83,14 @@ class Api::V1::SubscriptionsController < Api::V1::ApplicationController
 
   private
 
+    def internal_billing_disabled?
+      current_company.internal_deployment_access?
+    end
+
+    def render_internal_billing_disabled
+      render json: { errors: "Billing is disabled for internal workspaces" }, status: 422
+    end
+
     def render_summary(notice: nil)
       render json: summary_payload.merge(notice:).compact, status: 200
     end
@@ -88,7 +99,7 @@ class Api::V1::SubscriptionsController < Api::V1::ApplicationController
       {
         plan_tier: current_company.plan_tier,
         plan_label: current_company.current_plan_label,
-        billing_exempt: current_company.billing_exempt,
+        billing_exempt: current_company.internal_deployment_access?,
         subscription_status: current_company.current_subscription_status,
         subscription_ends_at: current_company.subscription_ends_at,
         cancel_at_period_end: current_company.cancel_at_period_end,

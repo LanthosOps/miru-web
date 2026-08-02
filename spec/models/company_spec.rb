@@ -327,6 +327,18 @@ RSpec.describe Company, type: :model do
     end
 
     describe "#pro_access?" do
+      it "grants durable internal access to an existing workspace" do
+        allow(ENV).to receive(:[]).and_call_original
+        allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+
+        expect(company).not_to be_billing_exempt
+        expect(company).to be_internal_deployment_access
+        expect(company.pro_access?).to eq(true)
+        expect(company.trial_available?).to eq(false)
+        expect(company.current_plan_label).to eq("free_pro")
+        expect(company.team_member_limit).to eq(Float::INFINITY)
+      end
+
       it "is true while the trial is active" do
         travel_to(Time.zone.local(2026, 3, 11, 12, 0, 0)) do
           company.update!(trial_started_at: Time.current, trial_ends_at: 30.days.from_now)
