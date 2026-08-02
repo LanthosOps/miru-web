@@ -49,7 +49,7 @@ RSpec.describe "Settings billing", type: :system, js: true do
 
       expect(page).to have_content("2/3 seats used", wait: 10)
       expect(page).to have_content("Client portal users included in seat count", wait: 10)
-      expect(page).to have_content("Your seat count includes 1 client portal user(s) who have login access", wait: 10)
+      expect(page).to have_content("1 client portal user(s) have login access and count toward your workspace's seat usage", wait: 10)
     end
   end
 
@@ -73,6 +73,27 @@ RSpec.describe "Settings billing", type: :system, js: true do
 
       click_link "Billing"
       expect(page).to have_current_path("/settings/billing", wait: 10)
+    end
+  end
+
+  it "hides upstream billing throughout an internal workspace" do
+    allow(ENV).to receive(:[]).and_call_original
+    allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+
+    with_forgery_protection do
+      visit "/settings/organization"
+
+      expect(company.reload).not_to be_billing_exempt
+      expect(page).to have_content("Lanthos Ops", wait: 10)
+      expect(page).not_to have_link("Billing")
+      expect(page).not_to have_link("Desktop App")
+
+      visit "/settings/billing"
+
+      expect(page).to have_current_path("/settings/organization", wait: 10)
+      expect(page).not_to have_button("Start 14-day Pro trial")
+      expect(page).not_to have_button("Upgrade with Stripe")
+      expect(page).not_to have_link("hello@saeloun.com")
     end
   end
 

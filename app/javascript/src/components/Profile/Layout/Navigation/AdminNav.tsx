@@ -4,14 +4,16 @@ import { useUserContext } from "context/UserContext";
 
 import List from "./List";
 
-import { SETTINGS } from "../routes";
+import { isSettingVisibleForWorkspace, SETTINGS } from "../routes";
 
 const AdminNav = () => {
-  const { companyRole } = useUserContext();
+  const { companyRole, company } = useUserContext();
 
   const allSettings = SETTINGS.filter(
-    ({ isTab, authorisedRoles }) =>
-      isTab && authorisedRoles.includes(companyRole)
+    setting =>
+      setting.isTab &&
+      setting.authorisedRoles.includes(companyRole) &&
+      isSettingVisibleForWorkspace(setting, company)
   );
 
   return (

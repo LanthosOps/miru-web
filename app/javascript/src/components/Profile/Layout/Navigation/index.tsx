@@ -10,14 +10,16 @@ import AdminNav from "./AdminNav";
 import List from "./List";
 import UserInformation from "./UserInformation";
 
-import { SETTINGS } from "../routes";
+import { isSettingVisibleForWorkspace, SETTINGS } from "../routes";
 
 const SideNav = () => {
   const { isCalledFromSettings, updateDetails } = useProfileContext();
-  const { isAdminUser, companyRole, user } = useUserContext();
+  const { isAdminUser, companyRole, company, user } = useUserContext();
   const accessibleSettings = SETTINGS.filter(
-    ({ isTab, authorisedRoles }) =>
-      isTab && authorisedRoles.includes(companyRole)
+    setting =>
+      setting.isTab &&
+      setting.authorisedRoles.includes(companyRole) &&
+      isSettingVisibleForWorkspace(setting, company)
   );
   const { memberId } = useParams();
   const UserId = window.location.pathname.startsWith("/settings")

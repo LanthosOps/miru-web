@@ -204,6 +204,7 @@ export const SETTINGS = [
     Component: Billing,
     category: "organization",
     isTab: true,
+    hiddenForInternalWorkspace: true,
   },
   // Uncomment when Integrating with API
   // {
@@ -223,3 +224,6 @@ export const SETTINGS = [
   // isTab: false,
   // },
 ];
+
+export const isSettingVisibleForWorkspace = (setting, company) =>
+  !setting.hiddenForInternalWorkspace || !company?.billing_exempt;

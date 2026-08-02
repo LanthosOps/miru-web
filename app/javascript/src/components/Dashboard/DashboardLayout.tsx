@@ -48,6 +48,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const { companyRole, user, company, avatarUrl, locale } = useUserContext();
+  const isInternalWorkspace = Boolean(company?.billing_exempt);
   const themeMode = useThemeMode();
   const logoStyle = useMemo(
     () => ({
@@ -194,6 +195,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     ...group,
     items: group.items
       .filter(item => !item.roles || item.roles.includes(companyRole))
+      .filter(
+        item =>
+          !isInternalWorkspace ||
+          (item.href !== "/settings/billing" &&
+            !item.href.startsWith("https://miru.so/"))
+      )
       .map(item =>
         item.href === "/reports" && !hasProAccess(company)
           ? { ...item, href: "/settings/billing?feature=reports" }
@@ -204,7 +211,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   // prettier-ignore
   const filteredNavigation = useMemo(
     () => navigationGroups.map(filterNavigationGroup),
-    [companyRole, company?.pro_access, locale]
+    [companyRole, company?.billing_exempt, company?.pro_access, locale]
   );
 
   const pageTitle = useMemo(() => {
@@ -262,13 +269,24 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         <div className="h-full border-r border-border bg-card">
           <div className="flex items-center justify-between border-b border-border p-4">
             <div className="flex items-center gap-3">
-              <img
-                src={MiruLogoSVG}
-                alt="Miru"
-                className="h-6 w-6"
-                style={logoStyle}
-              />
-              <span className="font-semibold text-foreground">Miru</span>
+              {isInternalWorkspace ? (
+                <span
+                  aria-hidden="true"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground"
+                >
+                  L
+                </span>
+              ) : (
+                <img
+                  src={MiruLogoSVG}
+                  alt="Miru"
+                  className="h-6 w-6"
+                  style={logoStyle}
+                />
+              )}
+              <span className="font-semibold text-foreground">
+                {isInternalWorkspace ? "Lanthos Ops" : "Miru"}
+              </span>
             </div>
             <button
               onClick={() => setMobileOpen(false)}
@@ -308,15 +326,26 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 sidebarCollapsed ? t("sidebar.expand") : t("sidebar.collapse")
               }
             >
-              <img
-                src={MiruLogoSVG}
-                alt="Miru"
-                className="h-6 w-6"
-                style={logoStyle}
-              />
+              {isInternalWorkspace ? (
+                <span
+                  aria-hidden="true"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground"
+                >
+                  L
+                </span>
+              ) : (
+                <img
+                  src={MiruLogoSVG}
+                  alt="Miru"
+                  className="h-6 w-6"
+                  style={logoStyle}
+                />
+              )}
               {!sidebarCollapsed && (
                 <div className="text-left">
-                  <span className="font-semibold text-foreground">Miru</span>
+                  <span className="font-semibold text-foreground">
+                    {isInternalWorkspace ? "Lanthos Ops" : "Miru"}
+                  </span>
                 </div>
               )}
             </button>
