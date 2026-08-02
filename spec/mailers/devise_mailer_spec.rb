@@ -13,15 +13,18 @@ RSpec.describe Devise::Mailer, type: :mailer do
 
     it "uses Lanthos copy across account lifecycle emails" do
       user = create(:user)
+      mailer_class = Devise.mailer
       messages = [
-        described_class.confirmation_instructions(user, "confirmation-token"),
-        described_class.reset_password_instructions(user, "reset-token"),
-        described_class.email_changed(user),
-        described_class.password_change(user),
-        described_class.unlock_instructions(user, "unlock-token")
+        mailer_class.confirmation_instructions(user, "confirmation-token"),
+        mailer_class.reset_password_instructions(user, "reset-token"),
+        mailer_class.email_changed(user),
+        mailer_class.password_change(user),
+        mailer_class.unlock_instructions(user, "unlock-token")
       ]
 
       messages.each do |message|
+        expect(message.subject).to include("Lanthos Ops")
+        expect(message.subject).not_to include("Miru")
         expect(message.body.encoded).to include("Lanthos Ops")
         expect(message.body.encoded).not_to include("hello@saeloun.com")
       end
