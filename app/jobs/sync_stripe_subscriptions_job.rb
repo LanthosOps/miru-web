@@ -4,6 +4,8 @@ class SyncStripeSubscriptionsJob < ApplicationJob
   queue_as :default
 
   def perform
+    return if InternalDeployment.enabled?
+
     companies.find_each do |company|
       SyncStripeSubscriptionCompanyJob.perform_later(company.id)
     end

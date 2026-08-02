@@ -254,6 +254,7 @@ export const ROUTES = [
     path: Paths.SUBSCRIPTIONS,
     subRoutes: SubscriptionsRoutes,
     authorisedRoles: [ADMIN, OWNER],
+    hiddenForInternalDeployment: true,
   },
   {
     path: Paths.PAYMENTS,

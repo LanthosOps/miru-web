@@ -7,6 +7,7 @@ import { InputErrors, InputField } from "common/FormikFields";
 import { useAuthDispatch } from "context/auth";
 import { useUserContext } from "context/UserContext";
 import { Formik, Form, FormikProps } from "formik";
+import { internalDeploymentEnabled } from "../../../lib/internalDeployment";
 import { GithubIcon, GoogleSVG } from "miruIcons";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -29,6 +30,7 @@ interface SignInFormValues {
 }
 
 const SignInForm = () => {
+  const isInternalDeployment = internalDeploymentEnabled();
   const { locale } = useUserContext();
   const [privacyModal, setPrivacyModal] = useState(false);
   const [termsOfServiceModal, setTermsOfServiceModal] = useState(false);
@@ -373,33 +375,37 @@ const SignInForm = () => {
               </a>
             </span>
           </p>
-          <p className="text-center text-sm text-muted-foreground">
-            {t("auth.signIn.noAccount")}{" "}
-            <span className="inline cursor-pointer">
-              <a href={Paths.SIGNUP}>
-                <span className="inline-block text-foreground hover:text-primary">
-                  {t("auth.signIn.signUp")}
+          {!isInternalDeployment && (
+            <>
+              <p className="text-center text-sm text-muted-foreground">
+                {t("auth.signIn.noAccount")}{" "}
+                <span className="inline cursor-pointer">
+                  <a href={Paths.SIGNUP}>
+                    <span className="inline-block text-foreground hover:text-primary">
+                      {t("auth.signIn.signUp")}
+                    </span>
+                  </a>
                 </span>
-              </a>
-            </span>
-          </p>
-          <div className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-            <button
-              className="hover:text-foreground"
-              onClick={handlePrivacyPolicy}
-              type="button"
-            >
-              {t("auth.signIn.privacy")}
-            </button>
-            <span>•</span>
-            <button
-              className="hover:text-foreground"
-              onClick={handleTermsOfService}
-              type="button"
-            >
-              {t("auth.signIn.terms")}
-            </button>
-          </div>
+              </p>
+              <div className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <button
+                  className="hover:text-foreground"
+                  onClick={handlePrivacyPolicy}
+                  type="button"
+                >
+                  {t("auth.signIn.privacy")}
+                </button>
+                <span>•</span>
+                <button
+                  className="hover:text-foreground"
+                  onClick={handleTermsOfService}
+                  type="button"
+                >
+                  {t("auth.signIn.terms")}
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </AuthShell>

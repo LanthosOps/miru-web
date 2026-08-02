@@ -47,6 +47,20 @@ RSpec.describe "Api::V1::Users::Sessions#create", type: :request do
       expect(set_cookie_header).to match(/expires=/i)
     end
 
+    it "rejects an existing account outside the internal allowlist" do
+      allow(ENV).to receive(:[]).and_call_original
+      allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+      allow(ENV).to receive(:fetch).and_call_original
+      allow(ENV).to receive(:fetch).with("MIRU_ALLOWED_SIGNUP_EMAILS", "").and_return("owner@example.com")
+
+      send_request :post, api_v1_users_login_path, params: {
+        user: { email: user.email, password: user.password }
+      }
+
+      expect(response).to have_http_status(:forbidden)
+      expect(json_response["error"]).to eq("This account is not approved for the internal workspace.")
+    end
+
     it "persists the requested locale on sign in" do
       send_request :post, api_v1_users_login_path, params: {
         user: {

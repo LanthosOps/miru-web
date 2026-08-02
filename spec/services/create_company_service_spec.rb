@@ -65,7 +65,8 @@ RSpec.describe CreateCompanyService do
         end.not_to have_enqueued_mail(SubscriptionMailer, :trial_started)
       end.not_to change { Ahoy::Event.where(name: "trial_started").count }
 
-      expect(company).to be_billing_exempt
+      expect(company).not_to be_billing_exempt
+      expect(company).to be_internal_deployment
       expect(company.trial_started_at).to be_nil
       expect(company.trial_ends_at).to be_nil
       expect(company.pro_access?).to be(true)

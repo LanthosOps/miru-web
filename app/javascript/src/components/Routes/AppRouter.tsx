@@ -9,6 +9,7 @@ import PublicRoute from "./PublicRoute";
 // Authentication Components
 import RouteErrorBoundary from "common/RouteErrorBoundary";
 import { dashboardUrl } from "utils/dashboardUrl";
+import { internalDeploymentEnabled } from "../../lib/internalDeployment";
 
 const SignIn = lazy(() => import("components/Authentication/SignIn"));
 const SignUp = lazy(() => import("components/Authentication/SignUp"));
@@ -110,7 +111,16 @@ const AppRouter: React.FC<AppRouterProps> = props => {
         >
           <Route element={withSuspense(<SignIn />)} path={Paths.SIGN_IN} />
           <Route element={withSuspense(<SignIn />)} path={Paths.LOGIN} />
-          <Route element={withSuspense(<SignUp />)} path={Paths.SIGNUP} />
+          <Route
+            element={
+              internalDeploymentEnabled() ? (
+                <Navigate replace to={Paths.SIGN_IN} />
+              ) : (
+                withSuspense(<SignUp />)
+              )
+            }
+            path={Paths.SIGNUP}
+          />
           <Route
             element={withSuspense(<ForgotPassword />)}
             path={Paths.FORGOT_PASSWORD}

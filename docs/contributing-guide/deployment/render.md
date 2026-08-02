@@ -81,6 +81,34 @@ bundle exec rake solid_queue:start
 
 Make sure the worker has the same shared app secrets as the web service.
 
+## Internal deployment mode
+
+`MIRU_INTERNAL_DEPLOYMENT=true` converts the deployment into a private,
+unmetered operations workspace. It is a deployment identity, not a replacement
+for the existing `billing_exempt` database field.
+
+Before enabling it:
+
+1. Set `MIRU_ALLOWED_SIGNUP_EMAILS` to the explicit owner email allowlist. An
+   internal deployment with an empty allowlist fails closed.
+2. Set both variables to the same values on every web and worker process.
+3. Run `bundle exec rake internal_deployment:verify`. The preflight fails while
+   any company still appears paid or has an active, trialing, or past-due Miru
+   subscription. Cancel those subscriptions in Stripe before continuing.
+4. Keep external identity/IAP access limited to the same owners. The app also
+   enforces the allowlist for password sessions, OAuth, API sessions, signup,
+   and invitations.
+
+While enabled, Miru subscription checkout, trial creation, portal access,
+subscription webhooks, scheduled Stripe synchronization, seat reconciliation,
+and trial email jobs are disabled. Customer invoice payment integrations remain
+available.
+
+The internal entitlement is derived from the environment and is not persisted
+to `billing_exempt`, so new and existing workspaces have the same rollback
+behavior. Turning the flag off restores normal Miru branding and billing rules;
+run the preflight again before turning it back on.
+
 ## Verification after deploy
 
 Run these checks before cutover:

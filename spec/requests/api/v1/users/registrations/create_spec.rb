@@ -118,6 +118,21 @@ RSpec.describe "Api::V1::Users::Registrations#create", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    it "fails closed when internal mode has an empty allowlist" do
+      allow(ENV).to receive(:[]).and_call_original
+      allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+      allow(ENV).to receive(:fetch).and_call_original
+      allow(ENV).to receive(:fetch).with("MIRU_ALLOWED_SIGNUP_EMAILS", "").and_return("")
+
+      expect {
+        send_request :post, api_v1_users_signup_path, params: {
+          user: valid_user_json.merge(email: "owner@example.com")
+        }
+      }.not_to change(User, :count)
+
+      expect(response).to have_http_status(:forbidden)
+    end
+
     it "creates user successfully from the desktop app payload" do
       send_request :post, api_v1_users_signup_path, params: {
         user: desktop_signup_json

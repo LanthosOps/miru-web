@@ -79,6 +79,8 @@ RSpec.describe "Settings billing", type: :system, js: true do
   it "hides upstream billing throughout an internal workspace" do
     allow(ENV).to receive(:[]).and_call_original
     allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+    allow(ENV).to receive(:fetch).and_call_original
+    allow(ENV).to receive(:fetch).with("MIRU_ALLOWED_SIGNUP_EMAILS", "").and_return(user.email)
 
     with_forgery_protection do
       visit "/settings/organization"
@@ -94,6 +96,60 @@ RSpec.describe "Settings billing", type: :system, js: true do
       expect(page).not_to have_button("Start 14-day Pro trial")
       expect(page).not_to have_button("Upgrade with Stripe")
       expect(page).not_to have_link("hello@saeloun.com")
+
+      visit "/subscriptions"
+      expect(page).to have_current_path("/settings/organization", wait: 10)
+    end
+  end
+
+  it "does not rebrand a normal billing-exempt Miru workspace" do
+    company.update!(billing_exempt: true)
+
+    with_forgery_protection do
+      visit "/dashboard"
+
+      expect(page).to have_css('img[alt="Miru"]', wait: 10)
+      expect(page).not_to have_content("Lanthos Ops")
+      expect(page).to have_link("Billing")
+    end
+  end
+
+  it "uses Lanthos branding on public authentication pages" do
+    allow(ENV).to receive(:[]).and_call_original
+    allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+    allow(ENV).to receive(:fetch).and_call_original
+    allow(ENV).to receive(:fetch).with("MIRU_ALLOWED_SIGNUP_EMAILS", "").and_return(user.email)
+    sign_out(user)
+
+    visit "/users/sign_in"
+
+    expect(page).to have_title(/Lanthos Ops/, wait: 10)
+    expect(page).to have_content("Lanthos Ops", wait: 10)
+    expect(page).not_to have_content("Miru")
+    expect(page).not_to have_link("Sign up")
+  end
+
+  it "uses one accessible Lanthos navigation shell on mobile" do
+    allow(ENV).to receive(:[]).and_call_original
+    allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+    allow(ENV).to receive(:fetch).and_call_original
+    allow(ENV).to receive(:fetch).with("MIRU_ALLOWED_SIGNUP_EMAILS", "").and_return(user.email)
+
+    begin
+      page.current_window.resize_to(390, 844)
+      visit "/time-tracking"
+
+      expect(page.evaluate_script("window.innerWidth")).to eq(390)
+      expect(page).to have_css('button[aria-label="Open navigation"]', wait: 10)
+      find('button[aria-label="Open navigation"]').click
+      expect(page).to have_css('[role="dialog"][aria-label="Primary navigation"]', wait: 10)
+      expect(page).to have_content("Lanthos Ops")
+      expect(page).not_to have_css('img[alt="Miru"], img[alt="miru-logo"]')
+
+      find("body").send_keys(:escape)
+      expect(page).not_to have_css('[role="dialog"][aria-label="Primary navigation"]')
+    ensure
+      page.current_window.resize_to(1400, 1000)
     end
   end
 

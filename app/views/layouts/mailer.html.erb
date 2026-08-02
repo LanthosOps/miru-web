@@ -598,7 +598,8 @@
     <![endif]-->
   </head>
   <body style="margin: 0; padding: 0; width: 100%; min-width: 100%; background-color: #f5f7fb; color: #020617; font-family: Inter, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;">
-    <% preheader = content_for?(:email_preheader) ? yield(:email_preheader).to_s.strip : t("mailers.layout.preheader") %>
+    <% internal_deployment = InternalDeployment.enabled? %>
+    <% preheader = content_for?(:email_preheader) ? yield(:email_preheader).to_s.strip : (internal_deployment ? "A secure update from Lanthos Ops." : t("mailers.layout.preheader")) %>
     <% brand_logo_url = email_company_logo_url %>
     <% brand_name = email_company_name %>
     <div style="display: none; max-height: 0; overflow: hidden; opacity: 0; mso-hide: all;">
@@ -619,6 +620,13 @@
                         <div class="email-brand-logo-wrap" style="display: inline-block; width: 72px; height: 72px; border-radius: 12px; border: 1px solid #e5e7eb; background-color: #f8fafc; overflow: hidden; line-height: 0; font-size: 0;">
                           <img src="<%= brand_logo_url %>" width="72" height="72" alt="<%= brand_name %>" class="email-company-logo" style="display: block; width: 72px; height: 72px; object-fit: cover; border-radius: 12px; border: 0; outline: none; text-decoration: none;" />
                         </div>
+                      <% elsif internal_deployment %>
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" aria-label="Lanthos Ops" style="margin: 0 auto; border-collapse: collapse;">
+                          <tr>
+                            <td style="width: 34px; height: 34px; border-radius: 8px; background-color: #2a2927; color: #ffffff; font-size: 18px; font-weight: 800; line-height: 34px; text-align: center;">L</td>
+                            <td style="padding-left: 10px; text-align: left; color: #020617; font-size: 22px; font-weight: 800; line-height: 1;">Lanthos Ops</td>
+                          </tr>
+                        </table>
                       <% elsif miru_logo_dark_url.present? %>
                         <img src="<%= miru_logo_dark_url %>" width="120" alt="<%= t("mailers.layout.brand") %>" class="email-brand-logo logo-light-mode" style="display: block; width: 120px; height: auto; margin: 0 auto; border: 0; outline: none; text-decoration: none;" />
                         <% if miru_logo_light_url.present? %>
@@ -660,7 +668,7 @@
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="email-footer-card">
                   <tr>
                     <td>
-                      <% if brand_logo_url.blank? && miru_logo_dark_url.present? %>
+                      <% if !internal_deployment && brand_logo_url.blank? && miru_logo_dark_url.present? %>
                         <div style="margin-bottom: 14px;">
                           <img src="<%= miru_logo_dark_url %>" width="80" alt="<%= t("mailers.layout.brand") %>" class="logo-light-mode" style="display: block; width: 80px; height: auto; margin: 0 auto; border: 0; outline: none; text-decoration: none;" />
                           <% if miru_logo_light_url.present? %>
@@ -668,13 +676,16 @@
                           <% end %>
                         </div>
                       <% end %>
-                      <div><%= t("mailers.layout.footer_body") %></div>
+                      <div><%= internal_deployment ? "Lanthos Ops keeps internal work, finance, and operations in one workspace." : t("mailers.layout.footer_body") %></div>
                       <div style="margin-top: 12px;">
-                        <a href="https://app.miru.so" target="_blank" class="email-footer-link"><%= t("mailers.layout.footer_site") %></a>
-                        &nbsp;&middot;&nbsp;
-                        <a href="mailto:<%= t("mailers.layout.footer_contact") %>" class="email-footer-link"><%= t("mailers.layout.footer_contact") %></a>
+                        <a href="<%= internal_deployment ? ENV.fetch('APP_BASE_URL', '#') : 'https://app.miru.so' %>" target="_blank" class="email-footer-link"><%= internal_deployment ? "Lanthos Ops" : t("mailers.layout.footer_site") %></a>
+                        <% contact_email = internal_deployment ? ENV.fetch("REPLY_TO_EMAIL", "").presence : t("mailers.layout.footer_contact") %>
+                        <% if contact_email.present? %>
+                          &nbsp;&middot;&nbsp;
+                          <a href="mailto:<%= contact_email %>" class="email-footer-link"><%= contact_email %></a>
+                        <% end %>
                       </div>
-                      <div style="margin-top: 12px;"><%= t("mailers.layout.footer_copyright") %></div>
+                      <div style="margin-top: 12px;"><%= internal_deployment ? "© Lanthos Ops. Internal use only." : t("mailers.layout.footer_copyright") %></div>
                     </td>
                   </tr>
                 </table>

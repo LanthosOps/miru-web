@@ -1,7 +1,6 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { cn } from "../../lib/utils";
 import Sidebar from "./Sidebar";
-import MiruLogoSVG from "../../../images/miru-logo.svg";
 import {
   List,
   X,
@@ -27,7 +26,7 @@ import { useUserContext } from "context/UserContext";
 import { logoutApi } from "apis/api";
 import { Toastr } from "StyledComponents";
 import ThemeToggle from "../../common/ThemeToggle";
-import useThemeMode from "../../common/useThemeMode";
+import BrandLogo from "common/BrandLogo";
 import { hasProAccess } from "../../lib/planAccess";
 import { t } from "../../i18n";
 import CompactLocaleSwitcher from "../common/CompactLocaleSwitcher";
@@ -46,16 +45,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileSidebarRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const { companyRole, user, company, avatarUrl, locale } = useUserContext();
-  const isInternalWorkspace = Boolean(company?.billing_exempt);
-  const themeMode = useThemeMode();
-  const logoStyle = useMemo(
-    () => ({
-      filter: themeMode === "dark" ? "brightness(0) invert(1)" : "none",
-    }),
-    [themeMode]
-  );
+  const isInternalWorkspace = Boolean(company?.internal_deployment);
 
   const navigationGroups = [
     {
@@ -211,7 +205,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   // prettier-ignore
   const filteredNavigation = useMemo(
     () => navigationGroups.map(filterNavigationGroup),
-    [companyRole, company?.billing_exempt, company?.pro_access, locale]
+    [companyRole, company?.internal_deployment, company?.pro_access, locale]
   );
 
   const pageTitle = useMemo(() => {
@@ -235,19 +229,45 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   };
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (mobileOpen && !(event.target as Element).closest(".mobile-sidebar")) {
+    if (!mobileOpen) return;
+
+    const sidebar = mobileSidebarRef.current;
+    const focusable = Array.from(
+      sidebar?.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      ) || []
+    );
+    const firstFocusable = focusable[0];
+    const lastFocusable = focusable[focusable.length - 1];
+
+    firstFocusable?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
         setMobileOpen(false);
+
+        return;
+      }
+
+      if (event.key !== "Tab" || focusable.length === 0) return;
+
+      if (event.shiftKey && document.activeElement === firstFocusable) {
+        event.preventDefault();
+        lastFocusable?.focus();
+      } else if (!event.shiftKey && document.activeElement === lastFocusable) {
+        event.preventDefault();
+        firstFocusable?.focus();
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
 
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      mobileMenuButtonRef.current?.focus();
+    };
   }, [mobileOpen]);
-
-  // prettier-ignore
-  const mobileSidebarClasses = cn("mobile-sidebar fixed inset-y-0 left-0 z-30 w-64 transform transition-transform lg:hidden", mobileOpen ? "translate-x-0" : "-translate-x-full");
   // prettier-ignore
   const desktopSidebarClasses = cn("hidden transition-all duration-300 lg:fixed lg:inset-y-0 lg:left-0 lg:z-10 lg:block lg:border-r lg:border-border lg:bg-card", sidebarCollapsed ? "lg:w-16" : "lg:w-64");
 
@@ -260,59 +280,55 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     >
       {mobileOpen && (
         <div
+          aria-hidden="true"
           className="fixed inset-0 z-20 bg-black/50 backdrop-blur-sm lg:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
-      <div className={mobileSidebarClasses}>
-        <div className="h-full border-r border-border bg-card">
-          <div className="flex items-center justify-between border-b border-border p-4">
-            <div className="flex items-center gap-3">
-              {isInternalWorkspace ? (
-                <span
-                  aria-hidden="true"
-                  className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground"
-                >
-                  L
-                </span>
-              ) : (
-                <img
-                  src={MiruLogoSVG}
-                  alt="Miru"
-                  className="h-6 w-6"
-                  style={logoStyle}
-                />
-              )}
-              <span className="font-semibold text-foreground">
-                {isInternalWorkspace ? "Lanthos Ops" : "Miru"}
-              </span>
+      {mobileOpen && (
+        <div
+          aria-label="Primary navigation"
+          aria-modal="true"
+          className="mobile-sidebar fixed inset-y-0 left-0 z-30 w-64 lg:hidden"
+          id="mobile-navigation"
+          ref={mobileSidebarRef}
+          role="dialog"
+        >
+          <div className="h-full border-r border-border bg-card">
+            <div className="flex items-center justify-between border-b border-border p-4">
+              <div className="flex items-center gap-3">
+                <BrandLogo imageClassName="h-7 w-auto" />
+              </div>
+              <button
+                aria-label="Close navigation"
+                onClick={() => setMobileOpen(false)}
+                className="rounded-md p-2 transition-colors hover:bg-accent"
+              >
+                <X size={16} weight="light" />
+              </button>
             </div>
-            <button
-              onClick={() => setMobileOpen(false)}
-              className="rounded-md p-2 transition-colors hover:bg-accent"
-            >
-              <X size={16} weight="light" />
-            </button>
-          </div>
-          <div className="p-4">
-            <Sidebar
-              navigationGroups={filteredNavigation}
-              isCollapsed={false}
-              user={{
-                id: user?.id,
-                name:
-                  `${user?.first_name || ""} ${user?.last_name || ""}`.trim() ||
-                  user?.email ||
-                  "User",
-                email: user?.email || "",
-                avatar: avatarUrl || user?.avatar_url || "",
-                currentWorkspaceId: user?.current_workspace_id,
-              }}
-            />
+            <div className="p-4">
+              <Sidebar
+                navigationGroups={filteredNavigation}
+                isCollapsed={false}
+                user={{
+                  id: user?.id,
+                  name:
+                    `${user?.first_name || ""} ${
+                      user?.last_name || ""
+                    }`.trim() ||
+                    user?.email ||
+                    "User",
+                  email: user?.email || "",
+                  avatar: avatarUrl || user?.avatar_url || "",
+                  currentWorkspaceId: user?.current_workspace_id,
+                }}
+              />
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       <aside className={desktopSidebarClasses}>
         <Sidebar
@@ -326,28 +342,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 sidebarCollapsed ? t("sidebar.expand") : t("sidebar.collapse")
               }
             >
-              {isInternalWorkspace ? (
-                <span
-                  aria-hidden="true"
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground"
-                >
-                  L
-                </span>
-              ) : (
-                <img
-                  src={MiruLogoSVG}
-                  alt="Miru"
-                  className="h-6 w-6"
-                  style={logoStyle}
-                />
-              )}
-              {!sidebarCollapsed && (
-                <div className="text-left">
-                  <span className="font-semibold text-foreground">
-                    {isInternalWorkspace ? "Lanthos Ops" : "Miru"}
-                  </span>
-                </div>
-              )}
+              <BrandLogo
+                compact={sidebarCollapsed}
+                imageClassName="h-7 w-auto shrink-0"
+              />
             </button>
           }
           user={{
@@ -373,7 +371,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           <div className="flex items-center justify-between gap-3 px-3 py-3 sm:px-4 sm:py-4 md:px-6 lg:px-8">
             <div className="flex items-center gap-3 min-w-0">
               <button
+                aria-controls="mobile-navigation"
+                aria-expanded={mobileOpen}
+                aria-label="Open navigation"
                 onClick={() => setMobileOpen(true)}
+                ref={mobileMenuButtonRef}
                 className="rounded-lg border border-border bg-card p-2.5 shadow-sm transition-colors hover:bg-accent lg:hidden shrink-0"
               >
                 <List size={20} weight="light" />

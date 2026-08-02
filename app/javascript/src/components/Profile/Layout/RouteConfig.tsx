@@ -23,7 +23,7 @@ const ProtectedRoute = ({
     return <Loader className="h-screen" />;
   }
 
-  if (hiddenForInternalWorkspace && company?.billing_exempt) {
+  if (hiddenForInternalWorkspace && company?.internal_deployment) {
     return <Navigate replace to="/settings/organization" />;
   }
 

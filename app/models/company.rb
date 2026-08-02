@@ -60,14 +60,14 @@ class Company < ApplicationRecord
   # scopes
   scope :with_kept_employments, -> { merge(Employment.kept) }
 
-  before_validation :enable_internal_deployment_access, on: :create
-
   def self.internal_deployment?
-    ActiveModel::Type::Boolean.new.cast(ENV["MIRU_INTERNAL_DEPLOYMENT"])
+    InternalDeployment.enabled?
   end
 
-  def internal_deployment_access?
-    self.class.internal_deployment? || billing_exempt?
+  delegate :internal_deployment?, to: :class
+
+  def access_exempt?
+    internal_deployment? || billing_exempt?
   end
 
   def client_list
@@ -110,7 +110,7 @@ class Company < ApplicationRecord
   end
 
   def team_member_limit
-    return Float::INFINITY if internal_deployment_access?
+    return Float::INFINITY if access_exempt?
 
     pro_access? ? 100 : 3
   end
@@ -148,19 +148,23 @@ class Company < ApplicationRecord
   end
 
   def trial_active?
+    return false if internal_deployment?
+
     trial_started_at.present? && trial_ends_at.present? && trial_ends_at.future?
   end
 
   def trial_expired?
+    return false if internal_deployment?
+
     trial_started_at.present? && trial_ends_at.present? && trial_ends_at.past?
   end
 
   def trial_available?
-    !internal_deployment_access? && plan_tier != "paid" && trial_started_at.blank?
+    !access_exempt? && plan_tier != "paid" && trial_started_at.blank?
   end
 
   def pro_access?
-    internal_deployment_access? || plan_tier == "paid" || trial_active?
+    access_exempt? || plan_tier == "paid" || trial_active?
   end
 
   def stripe_subscription_active?
@@ -177,14 +181,15 @@ class Company < ApplicationRecord
   end
 
   def current_plan_label
-    return "free_pro" if internal_deployment_access?
     return "paid" if plan_tier == "paid"
+    return "free_pro" if access_exempt?
     return "pro_trial" if trial_active?
 
     "free"
   end
 
   def current_subscription_status
+    return nil if internal_deployment?
     return "trialing" if trial_active? && plan_tier != "paid"
     return "trial_expired" if trial_expired? && plan_tier != "paid"
 
@@ -256,14 +261,6 @@ class Company < ApplicationRecord
   end
 
   private
-
-    def enable_internal_deployment_access
-      return unless self.class.internal_deployment?
-
-      self.billing_exempt = true
-      self.trial_started_at = nil
-      self.trial_ends_at = nil
-    end
 
     def validate_attachment_constraints
       ATTACHMENT_CONTENT_TYPES.each do |name, allowed_content_types|

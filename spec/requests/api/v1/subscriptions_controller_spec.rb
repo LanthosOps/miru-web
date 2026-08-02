@@ -186,7 +186,10 @@ RSpec.describe Api::V1::SubscriptionsController, type: :request do
     end
 
     it "does not start a trial for an internal workspace" do
-      company.update!(billing_exempt: true)
+      allow(ENV).to receive(:[]).and_call_original
+      allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+      allow(ENV).to receive(:fetch).and_call_original
+      allow(ENV).to receive(:fetch).with("MIRU_ALLOWED_SIGNUP_EMAILS", "").and_return(user.email)
 
       expect do
         post "/api/v1/subscription/trial", headers: headers
@@ -202,17 +205,8 @@ RSpec.describe Api::V1::SubscriptionsController, type: :request do
     it "does not open checkout when internal deployment mode is enabled" do
       allow(ENV).to receive(:[]).and_call_original
       allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
-      allow(Stripe::Checkout::Session).to receive(:create)
-
-      post "/api/v1/subscription/checkout", headers: headers
-
-      expect(response).to have_http_status(:unprocessable_content)
-      expect(JSON.parse(response.body)["errors"]).to eq("Billing is disabled for internal workspaces")
-      expect(Stripe::Checkout::Session).not_to have_received(:create)
-    end
-
-    it "does not open checkout for an internal workspace" do
-      company.update!(billing_exempt: true)
+      allow(ENV).to receive(:fetch).and_call_original
+      allow(ENV).to receive(:fetch).with("MIRU_ALLOWED_SIGNUP_EMAILS", "").and_return(user.email)
       allow(Stripe::Checkout::Session).to receive(:create)
 
       post "/api/v1/subscription/checkout", headers: headers
@@ -409,7 +403,11 @@ RSpec.describe Api::V1::SubscriptionsController, type: :request do
 
   describe "POST /api/v1/subscription/portal" do
     it "does not open the Stripe portal for an internal workspace" do
-      company.update!(billing_exempt: true, stripe_customer_id: "cus_internal")
+      allow(ENV).to receive(:[]).and_call_original
+      allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+      allow(ENV).to receive(:fetch).and_call_original
+      allow(ENV).to receive(:fetch).with("MIRU_ALLOWED_SIGNUP_EMAILS", "").and_return(user.email)
+      company.update!(stripe_customer_id: "cus_internal")
       allow(Stripe::BillingPortal::Session).to receive(:create)
 
       post "/api/v1/subscription/portal", headers: headers

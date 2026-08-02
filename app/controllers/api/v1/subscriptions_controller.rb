@@ -84,7 +84,7 @@ class Api::V1::SubscriptionsController < Api::V1::ApplicationController
   private
 
     def internal_billing_disabled?
-      current_company.internal_deployment_access?
+      current_company.internal_deployment?
     end
 
     def render_internal_billing_disabled
@@ -96,15 +96,18 @@ class Api::V1::SubscriptionsController < Api::V1::ApplicationController
     end
 
     def summary_payload
+      internal_deployment = current_company.internal_deployment?
+
       {
         plan_tier: current_company.plan_tier,
         plan_label: current_company.current_plan_label,
-        billing_exempt: current_company.internal_deployment_access?,
+        billing_exempt: current_company.billing_exempt?,
+        internal_deployment:,
         subscription_status: current_company.current_subscription_status,
-        subscription_ends_at: current_company.subscription_ends_at,
-        cancel_at_period_end: current_company.cancel_at_period_end,
-        subscription_interval: current_company.try(:subscription_interval),
-        has_stripe_customer: current_company.stripe_customer_id.present?,
+        subscription_ends_at: internal_deployment ? nil : current_company.subscription_ends_at,
+        cancel_at_period_end: internal_deployment ? false : current_company.cancel_at_period_end,
+        subscription_interval: internal_deployment ? nil : current_company.try(:subscription_interval),
+        has_stripe_customer: !internal_deployment && current_company.stripe_customer_id.present?,
         team_member_limit: current_company.team_member_limit,
         used_team_seats: current_company.used_team_seats,
         billable_team_seats: current_company.billable_team_seats,
@@ -112,8 +115,8 @@ class Api::V1::SubscriptionsController < Api::V1::ApplicationController
         team_member_limit_reached: current_company.team_member_limit_reached?,
         trial_active: current_company.trial_active?,
         trial_available: current_company.trial_available?,
-        trial_started_at: current_company.trial_started_at,
-        trial_ends_at: current_company.trial_ends_at,
+        trial_started_at: internal_deployment ? nil : current_company.trial_started_at,
+        trial_ends_at: internal_deployment ? nil : current_company.trial_ends_at,
         pro_access: current_company.pro_access?
       }
     end

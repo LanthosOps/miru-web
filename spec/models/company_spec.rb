@@ -327,15 +327,28 @@ RSpec.describe Company, type: :model do
     end
 
     describe "#pro_access?" do
-      it "grants durable internal access to an existing workspace" do
+      it "keeps a normal billing exemption separate from deployment identity" do
+        company.update!(billing_exempt: true)
+
+        expect(company).not_to be_internal_deployment
+        expect(company).to be_access_exempt
+        expect(company.pro_access?).to eq(true)
+        expect(company.current_plan_label).to eq("free_pro")
+      end
+
+      it "grants consistent internal access to an existing workspace" do
         allow(ENV).to receive(:[]).and_call_original
         allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
 
         expect(company).not_to be_billing_exempt
-        expect(company).to be_internal_deployment_access
+        expect(company).to be_internal_deployment
+        expect(company).to be_access_exempt
         expect(company.pro_access?).to eq(true)
         expect(company.trial_available?).to eq(false)
+        expect(company.trial_active?).to eq(false)
+        expect(company.trial_expired?).to eq(false)
         expect(company.current_plan_label).to eq("free_pro")
+        expect(company.current_subscription_status).to be_nil
         expect(company.team_member_limit).to eq(Float::INFINITY)
       end
 

@@ -29,13 +29,9 @@ class Api::V1::Users::RegistrationsController < Devise::RegistrationsController
   private
 
     def require_allowed_signup_email!
-      allowed_emails = ENV.fetch("MIRU_ALLOWED_SIGNUP_EMAILS", "")
-        .split(/[\s,]+/)
-        .filter_map { |email| email.strip.downcase.presence }
-      return if allowed_emails.empty?
-      return if allowed_emails.include?(sign_up_params[:email].to_s.strip.downcase)
+      return if InternalDeployment.signup_email_allowed?(sign_up_params[:email])
 
-      render json: { error: "Sign-up is not available for this email." }, status: :forbidden
+      render json: { error: "Sign-up is not available for this email." }, status: 403
     end
 
     def sign_up_params

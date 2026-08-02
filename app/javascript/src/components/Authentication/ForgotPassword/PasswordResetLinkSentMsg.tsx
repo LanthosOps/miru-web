@@ -1,17 +1,14 @@
-import { MIRU_APP_URL } from "constants/index";
-
 import React from "react";
 
 import { authenticationApi } from "apis/api";
+import BrandLogo from "common/BrandLogo";
 import MiruLogoWatermark from "common/MiruLogoWatermark";
-import useThemeMode from "common/useThemeMode";
-import { MiruLogoWithTextSVG } from "miruIcons";
+import { productHomeUrl } from "../../../lib/internalDeployment";
 
 interface Props {
   email: string;
 }
 const PasswordResetLinkSentMsg = ({ email }: Props) => {
-  const themeMode = useThemeMode();
   const resendPasswordResetLink = async (email: string) => {
     if (email?.trim()) {
       await authenticationApi.forgotPassword({ email });
@@ -22,15 +19,10 @@ const PasswordResetLinkSentMsg = ({ email }: Props) => {
     <div className="relative min-h-screen w-full bg-background px-8 pb-4 pt-10 text-foreground md:px-0 md:pt-36">
       <div className="mx-auto min-h-full md:w-5/12 lg:w-352">
         <div>
-          <a href={MIRU_APP_URL} rel="noreferrer noopener">
-            <img
-              alt="Miru"
-              className="d-block mx-auto mb-4 h-10 w-auto object-contain md:mb-10 lg:mb-20"
-              src={MiruLogoWithTextSVG}
-              style={{
-                filter:
-                  themeMode === "dark" ? "brightness(0) invert(1)" : "none",
-              }}
+          <a href={productHomeUrl()} rel="noreferrer noopener">
+            <BrandLogo
+              className="mx-auto mb-4 md:mb-10 lg:mb-20"
+              imageClassName="h-10 w-auto object-contain"
             />
           </a>
         </div>

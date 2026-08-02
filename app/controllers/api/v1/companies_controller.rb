@@ -34,15 +34,7 @@ class Api::V1::CompaniesController < Api::V1::ApplicationController
   private
 
     def company_payload(company)
-      company.as_json.merge(
-        "billing_exempt" => company.internal_deployment_access?,
-        "pro_access" => company.pro_access?,
-        "current_plan_label" => company.current_plan_label,
-        "team_member_limit" => company.team_member_limit,
-        "used_team_seats" => company.used_team_seats,
-        "reserved_team_seats" => company.reserved_team_seats,
-        "team_member_limit_reached" => company.team_member_limit_reached?
-      )
+      company.as_json.merge(CompanyAccessPayload.for(company))
     end
 
     def company_params

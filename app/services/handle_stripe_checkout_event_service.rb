@@ -90,6 +90,11 @@ class HandleStripeCheckoutEventService
       checkout_session = event.data.object
 
       if checkout_session.mode == "subscription"
+        if InternalDeployment.enabled?
+          set_response({ success: true }, :ok)
+          return
+        end
+
         company = resolve_subscription_company(checkout_session)
 
         if mismatched_company?(company, checkout_session.customer)
@@ -118,6 +123,11 @@ class HandleStripeCheckoutEventService
     end
 
     def handle_subscription_event
+      if InternalDeployment.enabled?
+        set_response({ success: true }, :ok)
+        return
+      end
+
       subscription = event.data.object
       success =
         Subscriptions::StripeSyncService.process(
@@ -133,6 +143,11 @@ class HandleStripeCheckoutEventService
       invoice = event.data.object
       subscription_id = invoice.subscription
       return if subscription_id.blank?
+
+      if InternalDeployment.enabled?
+        set_response({ success: true }, :ok)
+        return
+      end
 
       success =
         Subscriptions::StripeSyncService.process(

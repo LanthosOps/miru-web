@@ -42,5 +42,14 @@ RSpec.describe Authentication::Google, type: :class do
       identity = user.identities.find_by(provider: Authentication::Google::PROVIDER, uid: user_data.uid)
       expect(identity.present?).to be_truthy
     end
+
+    it "rejects an unapproved user in an internal deployment" do
+      allow(ENV).to receive(:[]).and_call_original
+      allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+      allow(ENV).to receive(:fetch).and_call_original
+      allow(ENV).to receive(:fetch).with("MIRU_ALLOWED_SIGNUP_EMAILS", "").and_return("owner@example.com")
+
+      expect { expect(described_class.new(user_data).user!).to be_nil }.not_to change(User, :count)
+    end
   end
 end

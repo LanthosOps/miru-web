@@ -163,6 +163,22 @@ RSpec.describe "Stripe webhooks", type: :request do
     )
   end
 
+  it "acknowledges subscription events without syncing in an internal deployment" do
+    event = OpenStruct.new(
+      type: "customer.subscription.updated",
+      data: OpenStruct.new(object: OpenStruct.new(id: "sub_internal", customer: "cus_123"))
+    )
+    allow(ENV).to receive(:[]).and_call_original
+    allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+    allow(Stripe::Webhook).to receive(:construct_event).and_return(event)
+    allow(Subscriptions::StripeSyncService).to receive(:process)
+
+    post "/webhooks/stripe/checkout/fulfillment", params: "{}", headers: headers
+
+    expect(response).to have_http_status(:ok)
+    expect(Subscriptions::StripeSyncService).not_to have_received(:process)
+  end
+
   it "routes checkout payment completions to invoice fulfillment without hitting Stripe" do
     event = OpenStruct.new(
       type: "checkout.session.completed",

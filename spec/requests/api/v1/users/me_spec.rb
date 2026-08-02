@@ -67,13 +67,19 @@ RSpec.describe "Api::V1::Users#me", type: :request do
     it "returns effective internal access for an existing workspace" do
       allow(ENV).to receive(:[]).and_call_original
       allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+      allow(ENV).to receive(:fetch).and_call_original
+      allow(ENV).to receive(:fetch).with("MIRU_ALLOWED_SIGNUP_EMAILS", "").and_return(user.email)
 
       get api_v1_users_me_path, headers: auth_headers(user)
 
       expect(company).not_to be_billing_exempt
-      expect(json_response.dig("company", "billing_exempt")).to eq(true)
+      expect(json_response.dig("company", "billing_exempt")).to eq(false)
+      expect(json_response.dig("company", "internal_deployment")).to eq(true)
       expect(json_response.dig("company", "pro_access")).to eq(true)
       expect(json_response.dig("company", "current_plan_label")).to eq("free_pro")
+      expect(json_response.dig("company", "trial_active")).to eq(false)
+      expect(json_response.dig("company", "trial_ends_at")).to be_nil
+      expect(json_response.dig("company", "subscription_status")).to be_nil
     end
 
     it "returns the user role" do

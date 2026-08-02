@@ -1,6 +1,7 @@
 import React from "react";
 
-import { MiruLogoWithTextSVG, ReportsIcon } from "miruIcons";
+import BrandLogo from "common/BrandLogo";
+import { ReportsIcon } from "miruIcons";
 import { Button } from "StyledComponents";
 
 import CompanyInfo from "components/Invoices/common/CompanyInfo";
@@ -71,7 +72,7 @@ const MobileView = ({ data }) => {
           <div className="border-b border-border px-4 py-4">
             <div className="rounded-lg border border-border bg-card p-4">
               <div className="mb-3 flex items-center justify-center border-b border-border pb-3">
-                <img alt="Miru" className="h-6" src={MiruLogoWithTextSVG} />
+                <BrandLogo imageClassName="h-6 w-auto" />
               </div>
               <img
                 alt="UPI QR code"

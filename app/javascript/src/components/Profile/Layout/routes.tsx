@@ -226,4 +226,4 @@ export const SETTINGS = [
 ];
 
 export const isSettingVisibleForWorkspace = (setting, company) =>
-  !setting.hiddenForInternalWorkspace || !company?.billing_exempt;
+  !setting.hiddenForInternalWorkspace || !company?.internal_deployment;

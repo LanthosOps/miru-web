@@ -8,6 +8,7 @@ import RouteErrorBoundary from "common/RouteErrorBoundary";
 import Cookies from "js-cookie";
 import { Routes, Route, Outlet, Navigate, useLocation } from "react-router-dom";
 import { dashboardUrl } from "utils/dashboardUrl";
+import type { Company } from "types/company";
 
 const isSafeInternalPath = (p: string): boolean => {
   const trimmed = (p || "").trim();
@@ -49,12 +50,22 @@ const redirectUrl = role => {
   return url;
 };
 
-const AuthorizedRouteOutlet = ({ user, role, authorisedRoles }) => {
+const AuthorizedRouteOutlet = ({
+  user,
+  role,
+  authorisedRoles,
+  hiddenForInternalDeployment,
+  internalDeployment,
+}) => {
   if (!user || !role) {
     return <Navigate to="/user/sign_in" />;
   }
 
   if (authorisedRoles.includes(role)) {
+    if (hiddenForInternalDeployment && internalDeployment) {
+      return <Navigate replace to="/settings/organization" />;
+    }
+
     return <Outlet />;
   }
 
@@ -85,6 +96,11 @@ const DashboardRoutes = (props: Iprops) => {
             element={
               <AuthorizedRouteOutlet
                 authorisedRoles={parentRoute.authorisedRoles}
+                hiddenForInternalDeployment={
+                  "hiddenForInternalDeployment" in parentRoute &&
+                  parentRoute.hiddenForInternalDeployment
+                }
+                internalDeployment={props.company?.internal_deployment}
                 role={role}
                 user={props.user}
               />
@@ -121,7 +137,7 @@ const DashboardRoutes = (props: Iprops) => {
 interface Iprops {
   user: object;
   companyRole: Roles;
-  company: object;
+  company: Company;
   isDesktop: boolean;
   isAdminUser: boolean;
 }

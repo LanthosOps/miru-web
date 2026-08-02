@@ -37,6 +37,17 @@ RSpec.describe Subscriptions::SeatReconciliationService do
       )
     end
 
+    it "does not reconcile seats in an internal deployment" do
+      allow(ENV).to receive(:[]).and_call_original
+      allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+
+      result = described_class.process(company:)
+
+      expect(result).to eq(false)
+      expect(Stripe::Subscription).not_to have_received(:retrieve)
+      expect(Stripe::Subscription).not_to have_received(:update)
+    end
+
     it "updates an over-billed subscription" do
       allow(company).to receive(:billable_team_seats).and_return(2)
 

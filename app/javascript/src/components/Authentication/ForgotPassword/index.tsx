@@ -1,13 +1,13 @@
-import { MIRU_APP_URL, Paths } from "constants/index";
+import { Paths } from "constants/index";
 
 import React, { useEffect, useState } from "react";
 
 import { authenticationApi } from "apis/api";
+import BrandLogo from "common/BrandLogo";
 import { InputErrors, InputField } from "common/FormikFields";
 import MiruLogoWatermark from "common/MiruLogoWatermark";
-import useThemeMode from "common/useThemeMode";
 import { Form, Formik, FormikProps } from "formik";
-import { MiruLogoWithTextSVG } from "miruIcons";
+import { productHomeUrl } from "../../../lib/internalDeployment";
 
 import { i18n } from "../../../i18n";
 import PasswordResetLinkSentMsg from "./PasswordResetLinkSentMsg";
@@ -21,7 +21,6 @@ interface ForgotPasswordFormValues {
 }
 
 const ForgotPassword = () => {
-  const themeMode = useThemeMode();
   const [emailToSendResetPasswordLink, setEmailToSendResetPasswordLink] =
     useState<string>("");
 
@@ -49,15 +48,10 @@ const ForgotPassword = () => {
     <div className="relative min-h-screen w-full bg-background px-8 pb-4 pt-10 text-foreground md:px-0 md:pt-36">
       <div className="mx-auto min-h-full md:w-1/2 lg:w-352">
         <div>
-          <a href={MIRU_APP_URL} rel="noreferrer noopener">
-            <img
-              alt={i18n.t("auth.miruLogo")}
-              className="d-block mx-auto mb-4 h-10 w-auto object-contain md:mb-10 lg:mb-20"
-              src={MiruLogoWithTextSVG}
-              style={{
-                filter:
-                  themeMode === "dark" ? "brightness(0) invert(1)" : "none",
-              }}
+          <a href={productHomeUrl()} rel="noreferrer noopener">
+            <BrandLogo
+              className="mx-auto mb-4 md:mb-10 lg:mb-20"
+              imageClassName="h-10 w-auto object-contain"
             />
           </a>
         </div>

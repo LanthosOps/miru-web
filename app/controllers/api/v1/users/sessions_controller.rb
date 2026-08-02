@@ -21,6 +21,8 @@ class Api::V1::Users::SessionsController < Devise::SessionsController
       render_invalid_password_error
     elsif !user.confirmed?
       render_unconfirmed_user_error(user)
+    elsif !InternalDeployment.authenticated_user_allowed?(user)
+      render_internal_access_denied
     elsif passkey_login_unsupported?(user)
       render_passkey_unsupported_error
     elsif passkey_login_required?(user)
@@ -90,6 +92,10 @@ class Api::V1::Users::SessionsController < Devise::SessionsController
         error: I18n.t("devise.failure.unconfirmed"),
         unconfirmed: !user.confirmed?
       }, status: 422
+    end
+
+    def render_internal_access_denied
+      render json: { error: "This account is not approved for the internal workspace." }, status: 403
     end
 
     def render_passkey_unsupported_error

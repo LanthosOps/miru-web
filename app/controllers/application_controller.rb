@@ -7,6 +7,7 @@ class ApplicationController < ActionController::Base
   include CurrentCompanyConcern
   include Pagy::Backend
   include SetCurrentDetails
+  include InternalDeploymentAccess
 
   # Vite handles asset compilation
 

@@ -57,6 +57,8 @@ RSpec.describe "Api::V1::Companies::update", type: :request do
       it "preserves effective internal access in the updated company payload" do
         allow(ENV).to receive(:[]).and_call_original
         allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+        allow(ENV).to receive(:fetch).and_call_original
+        allow(ENV).to receive(:fetch).with("MIRU_ALLOWED_SIGNUP_EMAILS", "").and_return(user.email)
 
         send_request(
           :put,
@@ -66,7 +68,8 @@ RSpec.describe "Api::V1::Companies::update", type: :request do
         )
 
         expect(company.reload).not_to be_billing_exempt
-        expect(json_response.dig("company", "billing_exempt")).to eq(true)
+        expect(json_response.dig("company", "billing_exempt")).to eq(false)
+        expect(json_response.dig("company", "internal_deployment")).to eq(true)
         expect(json_response.dig("company", "pro_access")).to eq(true)
         expect(json_response.dig("company", "current_plan_label")).to eq("free_pro")
       end

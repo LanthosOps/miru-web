@@ -38,7 +38,7 @@ import { paymentSettings, quickBooksApi } from "apis/api";
 import { ApiStatus as PaymentSettingsStatus } from "../../../../constants/index";
 import { Skeleton } from "../../../ui/skeleton";
 import { i18n } from "../../../../i18n";
-import { MiruLogoWithTextSVG } from "miruIcons";
+import BrandLogo from "common/BrandLogo";
 import { toast } from "sonner";
 
 const UPI_ID_PATTERN = /^[a-zA-Z0-9._-]{2,256}@[a-zA-Z][a-zA-Z0-9_-]{2,64}$/;
@@ -831,11 +831,7 @@ const OrganizationPaymentSettingsPage: React.FC = () => {
                             className="mb-3 flex items-center justify-center rounded-md border border-slate-200 bg-card px-3 py-2"
                             data-testid="upi-logo-surface"
                           >
-                            <img
-                              alt="Miru"
-                              className="h-6"
-                              src={MiruLogoWithTextSVG}
-                            />
+                            <BrandLogo imageClassName="h-6 w-auto" />
                           </div>
                           <div
                             className="mx-auto flex h-44 w-44 items-center justify-center rounded-md border border-slate-200 bg-card p-2"
