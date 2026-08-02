@@ -54,5 +54,33 @@ RSpec.describe MonthlyReportsMailer, type: :mailer do
       expect(body).to include("Saeloun Payroll")
       expect(body).to include("View reports in Miru")
     end
+
+    context "with internal deployment branding" do
+      before do
+        allow(ENV).to receive(:[]).and_call_original
+        allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+      end
+
+      it "presents the digest as Lanthos Ops" do
+        expect(body).to include("money moving through Lanthos Ops")
+        expect(body).to include("View reports")
+        expect(body).not_to include("Miru")
+      end
+
+      it "keeps empty digest states under Lanthos branding" do
+        empty_company = create(:company, name: "Lanthos Internal", base_currency: "USD")
+        empty_user = create(:user, current_workspace: empty_company, locale: "en-US")
+        empty_mail = described_class.with(
+          company_id: empty_company.id,
+          recipient_id: empty_user.id,
+          month: "2026-03-01"
+        ).cash_flow_digest
+        empty_body = empty_mail.html_part&.body&.decoded || empty_mail.body.decoded
+
+        expect(empty_body).to include("No payments were recorded in Lanthos Ops")
+        expect(empty_body).to include("No paid expenses were recorded in Lanthos Ops")
+        expect(empty_body).not_to include("Miru")
+      end
+    end
   end
 end

@@ -1,8 +1,9 @@
+<% internal_deployment = InternalDeployment.enabled? %>
 <% content_for :email_preheader, t("mailers.monthly_reports_mailer.cash_flow_digest.preheader", company_name: @company.name, month_label: @digest[:month_label]) %>
 <% content_for :email_eyebrow, t("mailers.monthly_reports_mailer.cash_flow_digest.eyebrow") %>
 <% content_for :email_title, t("mailers.monthly_reports_mailer.cash_flow_digest.title", company_name: @company.name, month_label: @digest[:month_label]) %>
 <% content_for :email_subtitle do %>
-  <%= t("mailers.monthly_reports_mailer.cash_flow_digest.subtitle", month_year_label: @digest[:month_year_label]) %>
+  <%= internal_deployment ? "Here is a concise view of money moving through Lanthos Ops for #{@digest[:month_year_label]}." : t("mailers.monthly_reports_mailer.cash_flow_digest.subtitle", month_year_label: @digest[:month_year_label]) %>
 <% end %>
 
 <div class="email-panel <%= @digest[:net_change] >= 0 ? "email-panel-success" : "email-panel-danger" %>">
@@ -56,7 +57,7 @@
       <% end %>
     <% else %>
       <tr>
-        <td class="digest-empty-state"><%= t("mailers.monthly_reports_mailer.cash_flow_digest.no_money_in", month_year_label: @digest[:month_year_label]) %></td>
+        <td class="digest-empty-state"><%= internal_deployment ? "No payments were recorded in Lanthos Ops for #{@digest[:month_year_label]}." : t("mailers.monthly_reports_mailer.cash_flow_digest.no_money_in", month_year_label: @digest[:month_year_label]) %></td>
       </tr>
     <% end %>
   </table>
@@ -74,10 +75,10 @@
       <% end %>
     <% else %>
       <tr>
-        <td class="digest-empty-state"><%= t("mailers.monthly_reports_mailer.cash_flow_digest.no_money_out", month_year_label: @digest[:month_year_label]) %></td>
+        <td class="digest-empty-state"><%= internal_deployment ? "No paid expenses were recorded in Lanthos Ops for #{@digest[:month_year_label]}." : t("mailers.monthly_reports_mailer.cash_flow_digest.no_money_out", month_year_label: @digest[:month_year_label]) %></td>
       </tr>
     <% end %>
   </table>
 </div>
 
-<%= render "shared/mailer/button", href: @reports_url, label: t("mailers.actions.view_reports") %>
+<%= render "shared/mailer/button", href: @reports_url, label: internal_deployment ? "View reports" : t("mailers.actions.view_reports") %>

@@ -28,5 +28,29 @@ RSpec.describe AnalyticsMailer, type: :mailer do
       expect(body).to include("20.0")
       expect(body).to include("View analytics")
     end
+
+    context "with internal deployment branding" do
+      before do
+        allow(ENV).to receive(:[]).and_call_original
+        allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+      end
+
+      it "presents the alert as Lanthos Ops" do
+        mail = described_class.with(
+          company_id: company.id,
+          recipient: recipient.email,
+          alert: {
+            type: "low_utilization",
+            title: "Low utilization detected",
+            message: "Team utilization is below 60% for the previous completed week.",
+            metadata: { utilization_rate: 55.0 }
+          }
+        ).threshold_alert
+        body = mail.html_part&.body&.decoded || mail.body.decoded
+
+        expect(body).to include("Review this threshold alert in Lanthos Ops")
+        expect(body).not_to include("Miru")
+      end
+    end
   end
 end
