@@ -50,6 +50,76 @@ RSpec.describe "Api::V1::TimesheetEntry#create", type: :request do
       expect(created_entry.bill_status).to eq("unbilled")
     end
 
+    it "replays a repeated submission key without creating a duplicate entry" do
+      headers = auth_headers(user).merge("Idempotency-Key" => "lanthos-time-entry-duplicate-test")
+      entry_ids = []
+
+      expect do
+        2.times do
+          send_request :post, api_v1_timesheet_entry_index_path, params: entry_params, headers: headers
+          expect(response).to be_successful
+          entry_ids << json_response.dig("entry", "id")
+        end
+      end.to change(TimesheetEntry, :count).by(1)
+
+      expect(entry_ids.uniq.one?).to be(true)
+    end
+
+    it "rejects a repeated submission key when the time entry data changes" do
+      headers = auth_headers(user).merge("Idempotency-Key" => "lanthos-time-entry-conflict-test")
+
+      expect do
+        send_request :post, api_v1_timesheet_entry_index_path, params: entry_params, headers: headers
+        expect(response).to be_successful
+
+        changed_params = entry_params.deep_merge(timesheet_entry: { note: "Different work" })
+        send_request :post, api_v1_timesheet_entry_index_path, params: changed_params, headers: headers
+
+        expect(response).to have_http_status(:conflict)
+        expect(json_response["errors"]).to match(/already used with different time entry data/)
+      end.to change(TimesheetEntry, :count).by(1)
+    end
+
+    it "replays semantically equivalent data with an echoed nested project id" do
+      headers = auth_headers(user).merge("Idempotency-Key" => "lanthos-time-entry-canonical-test")
+      entry_ids = []
+
+      expect do
+        send_request :post, api_v1_timesheet_entry_index_path, params: entry_params, headers: headers
+        expect(response).to be_successful
+        entry_ids << json_response.dig("entry", "id")
+
+        retry_params = entry_params.deep_merge(timesheet_entry: { project_id: project.id })
+        send_request :post, api_v1_timesheet_entry_index_path, params: retry_params, headers: headers
+        expect(response).to be_successful
+        entry_ids << json_response.dig("entry", "id")
+      end.to change(TimesheetEntry, :count).by(1)
+
+      expect(entry_ids.uniq.one?).to be(true)
+    end
+
+    it "rejects an oversized submission key" do
+      headers = auth_headers(user).merge("Idempotency-Key" => "x" * 101)
+
+      expect do
+        send_request :post, api_v1_timesheet_entry_index_path, params: entry_params, headers: headers
+      end.not_to change(TimesheetEntry, :count)
+
+      expect(response).to have_http_status(:bad_request)
+    end
+
+    it "allows a submission key to be reused after its replay window expires" do
+      headers = auth_headers(user).merge("Idempotency-Key" => "lanthos-time-entry-expired-test")
+      send_request :post, api_v1_timesheet_entry_index_path, params: entry_params, headers: headers
+      expect(response).to be_successful
+      MCPIdempotencyRecord.order(:created_at).last.update!(expires_at: 1.second.ago)
+
+      expect do
+        send_request :post, api_v1_timesheet_entry_index_path, params: entry_params, headers: headers
+        expect(response).to be_successful
+      end.to change(TimesheetEntry, :count).by(1)
+    end
+
     it "does not create entries on projects from another workspace" do
       other_company = create(:company)
       other_client = create(:client, company: other_company)
