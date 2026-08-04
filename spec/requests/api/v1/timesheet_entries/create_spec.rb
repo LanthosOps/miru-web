@@ -109,6 +109,29 @@ RSpec.describe "Api::V1::TimesheetEntry#create", type: :request do
       expect(json_response).to eq("errors" => "Idempotency-Key must be 100 bytes or fewer")
     end
 
+    it "measures the submission key limit in UTF-8 bytes" do
+      headers = auth_headers(user).merge("Idempotency-Key" => "é" * 51)
+
+      expect do
+        send_request :post, api_v1_timesheet_entry_index_path, params: entry_params, headers: headers
+      end.not_to change(TimesheetEntry, :count)
+
+      expect(response).to have_http_status(:bad_request)
+      expect(json_response).to eq("errors" => "Idempotency-Key must be 100 bytes or fewer")
+    end
+
+    it "rejects creating an already billed entry" do
+      billed_entry_params = entry_params.deep_merge(timesheet_entry: { bill_status: :billed })
+
+      expect do
+        send_request :post, api_v1_timesheet_entry_index_path,
+          params: billed_entry_params,
+          headers: auth_headers(user)
+      end.not_to change(TimesheetEntry, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
     it "allows a submission key to be reused after its replay window expires" do
       headers = auth_headers(user).merge("Idempotency-Key" => "lanthos-time-entry-expired-test")
       send_request :post, api_v1_timesheet_entry_index_path, params: entry_params, headers: headers

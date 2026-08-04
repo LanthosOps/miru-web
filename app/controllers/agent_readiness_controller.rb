@@ -338,8 +338,7 @@ class AgentReadinessController < ActionController::Base
                   required: false,
                   description: "Unique retry key. The UTF-8 value must be no more than 100 bytes.",
                   schema: {
-                    type: "string",
-                    maxLength: ::Idempotency::Store::MAX_KEY_BYTES
+                    type: "string"
                   },
                   "x-maxBytes": ::Idempotency::Store::MAX_KEY_BYTES
                 }
@@ -363,7 +362,7 @@ class AgentReadinessController < ActionController::Base
                             note: { type: "string" },
                             bill_status: {
                               type: "string",
-                              enum: %w[non_billable unbilled billed]
+                              enum: %w[non_billable unbilled]
                             }
                           }
                         }

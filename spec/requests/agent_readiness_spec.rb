@@ -58,9 +58,11 @@ RSpec.describe "Agent readiness discovery", type: :request do
     end
 
     expect(idempotency_header).to include("required" => false)
-    expect(idempotency_header.dig("schema", "maxLength")).to eq(::Idempotency::Store::MAX_KEY_BYTES)
+    expect(idempotency_header.fetch("schema")).not_to have_key("maxLength")
     expect(idempotency_header["x-maxBytes"]).to eq(::Idempotency::Store::MAX_KEY_BYTES)
     expect(operation["description"]).to include("within 24 hours")
+    expect(operation.dig("requestBody", "content", "application/json", "schema", "properties", "timesheet_entry",
+      "properties", "bill_status", "enum")).to eq(%w[non_billable unbilled])
     expect(operation.fetch("responses").keys).to include("200", "400", "409", "422")
     expect(operation.dig("responses", "400", "content", "application/json", "example", "errors"))
       .to eq("Idempotency-Key must be 100 bytes or fewer")
