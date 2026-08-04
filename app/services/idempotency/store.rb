@@ -11,10 +11,10 @@ module Idempotency
     class PayloadMismatchError < StandardError; end
 
     class << self
-      def fetch(scope:, key:, request_digest: nil, cache_if: nil, serialize: nil, deserialize: nil)
+      def fetch(scope:, key:, request_digest: nil, max_key_bytes: nil, cache_if: nil, serialize: nil, deserialize: nil)
         return yield if key.blank?
 
-        validate_key!(key)
+        validate_key!(key, max_key_bytes:)
 
         cache_if ||= ->(_result) { true }
         serialize ||= ->(result) { result }
@@ -40,10 +40,11 @@ module Idempotency
 
       private
 
-        def validate_key!(key)
-          return if key.to_s.bytesize <= MAX_KEY_BYTES
+        def validate_key!(key, max_key_bytes:)
+          return unless max_key_bytes
+          return if key.to_s.bytesize <= max_key_bytes
 
-          raise InvalidKeyError, "Idempotency-Key must be #{MAX_KEY_BYTES} bytes or fewer"
+          raise InvalidKeyError, "Idempotency-Key must be #{max_key_bytes} bytes or fewer"
         end
 
         def cache_result(key_digest, result, request_digest:, serialize:)

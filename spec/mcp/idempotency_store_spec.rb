@@ -62,6 +62,25 @@ RSpec.describe MCP::Miru::IdempotencyStore do
       expect(calls).to eq(2)
     end
 
+    it "replays an existing result whose key exceeds the HTTP key limit" do
+      idempotency_key = "x" * (Idempotency::Store::MAX_KEY_BYTES + 1)
+      digest = described_class.send(:key_digest, tool_name:, idempotency_key:, authorization:)
+      MCPIdempotencyRecord.create!(
+        key_digest: digest,
+        response: result.to_h,
+        expires_at: 1.hour.from_now
+      )
+
+      calls = 0
+      replayed = described_class.fetch(tool_name:, idempotency_key:, authorization:) do
+        calls += 1
+        result
+      end
+
+      expect(calls).to eq(0)
+      expect(replayed.to_h).to eq(result.to_h)
+    end
+
     it "does not cache unsuccessful results" do
       calls = 0
       failed_result = MCP::Miru::ApiProxy::Result.new(

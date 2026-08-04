@@ -83,7 +83,8 @@ class Api::V1::TimesheetEntryController < Api::V1::ApplicationController
       ::Idempotency::Store.fetch(
         scope: ["api", "timesheet-entry", "create", current_company.id, current_user.id].join(":"),
         key: idempotency_key,
-        request_digest: idempotency_request_digest
+        request_digest: idempotency_request_digest,
+        max_key_bytes: ::Idempotency::Store::MAX_KEY_BYTES
       ) do
         create_payload
       end
