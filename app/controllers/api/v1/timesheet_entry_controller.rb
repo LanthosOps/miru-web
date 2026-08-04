@@ -1,7 +1,12 @@
 # frozen_string_literal: true
 
+require "digest"
+
 class Api::V1::TimesheetEntryController < Api::V1::ApplicationController
   include DateRangeParamParsing
+
+  rescue_from ::Idempotency::Store::InvalidKeyError, with: :handle_invalid_idempotency_key
+  rescue_from ::Idempotency::Store::PayloadMismatchError, with: :handle_idempotency_conflict
 
   skip_after_action :verify_authorized, only: [:index]
   after_action :verify_policy_scoped, only: [:index]
@@ -28,12 +33,7 @@ class Api::V1::TimesheetEntryController < Api::V1::ApplicationController
 
   def create
     authorize TimesheetEntry
-    timesheet_entry = current_project.timesheet_entries.new(timesheet_entry_params)
-    timesheet_entry.user = timesheet_entry_user
-    render json: {
-      notice: I18n.t("timesheet_entry.create.message"),
-      entry: timesheet_entry.snippet
-    } if timesheet_entry.save!
+    render json: idempotent_create_payload
   end
 
   def update
@@ -77,5 +77,54 @@ class Api::V1::TimesheetEntryController < Api::V1::ApplicationController
 
     def timesheet_entry_params
       params.require(:timesheet_entry).permit(:project_id, :duration, :work_date, :note, :bill_status)
+    end
+
+    def idempotent_create_payload
+      ::Idempotency::Store.fetch(
+        scope: ["api", "timesheet-entry", "create", current_company.id, current_user.id].join(":"),
+        key: idempotency_key,
+        request_digest: idempotency_request_digest,
+        max_key_bytes: ::Idempotency::Store::MAX_KEY_BYTES
+      ) do
+        create_payload
+      end
+    end
+
+    def create_payload
+      timesheet_entry = current_project.timesheet_entries.new(effective_timesheet_entry_params)
+      timesheet_entry.user = timesheet_entry_user
+      timesheet_entry.save!
+      {
+        notice: I18n.t("timesheet_entry.create.message"),
+        entry: timesheet_entry.snippet
+      }
+    end
+
+    def idempotency_key
+      @_idempotency_key ||= request.headers["Idempotency-Key"].to_s.strip
+    end
+
+    def idempotency_request_digest
+      @_idempotency_request_digest ||= Digest::SHA256.hexdigest(
+        JSON.generate(
+          {
+            "project_id" => params[:project_id].to_s,
+            "user_id" => (params[:user_id].presence || current_user.id).to_s,
+            "timesheet_entry" => effective_timesheet_entry_params.to_h.deep_stringify_keys.sort.to_h
+          }
+        )
+      )
+    end
+
+    def effective_timesheet_entry_params
+      timesheet_entry_params.except(:project_id)
+    end
+
+    def handle_idempotency_conflict(exception)
+      render json: { errors: exception.message }, status: 409
+    end
+
+    def handle_invalid_idempotency_key(exception)
+      render json: { errors: exception.message }, status: 400
     end
 end

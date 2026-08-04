@@ -4,6 +4,7 @@ import React from "react";
 import Header from "components/Navbar/Mobile/Header";
 import Navigation from "components/Navbar/Mobile/Navigation";
 import { useUserContext } from "context/UserContext";
+import { internalDeploymentEnabled } from "../../../../lib/internalDeployment";
 
 type WrappedComponentType = React.ComponentType<any>;
 
@@ -15,12 +16,15 @@ const WithLayout =
   ) =>
   props => {
     const { selectedTab, setSelectedTab, companyRole } = useUserContext();
+    const isInternalDeployment = internalDeploymentEnabled();
 
     return (
       <div className="h-full">
-        {includeNavbar && <Header selectedTab={selectedTab} />}
+        {includeNavbar && !isInternalDeployment && (
+          <Header selectedTab={selectedTab} />
+        )}
         <WrappedComponent {...props} />
-        {includeSidebar && <Navigation />}
+        {includeSidebar && !isInternalDeployment && <Navigation />}
       </div>
     );
   };

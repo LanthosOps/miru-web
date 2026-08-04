@@ -36,19 +36,8 @@ module AuthResponsePayload
         "plan_tier"
       ).merge(
         "address" => company.current_address,
-        "logo" => company.company_logo,
-        "pro_access" => company.pro_access?,
-        "current_plan_label" => company.current_plan_label,
-        "billing_exempt" => company.billing_exempt?,
-        "trial_active" => company.trial_active?,
-        "trial_ends_at" => company.trial_ends_at,
-        "trial_expired" => company.trial_expired?,
-        "subscription_status" => company.current_subscription_status,
-        "team_member_limit" => company.team_member_limit,
-        "used_team_seats" => company.used_team_seats,
-        "reserved_team_seats" => company.reserved_team_seats,
-        "team_member_limit_reached" => company.team_member_limit_reached?
-      )
+        "logo" => company.company_logo
+      ).merge(CompanyAccessPayload.for(company))
     end
 
     def signed_in_payload(user, company:, notice:, include_token: false)

@@ -60,6 +60,16 @@ class Company < ApplicationRecord
   # scopes
   scope :with_kept_employments, -> { merge(Employment.kept) }
 
+  def self.internal_deployment?
+    InternalDeployment.enabled?
+  end
+
+  delegate :internal_deployment?, to: :class
+
+  def access_exempt?
+    internal_deployment? || billing_exempt?
+  end
+
   def client_list
     clients.kept.includes(:invoices, :addresses, client_members: :user).map do |client|
       {
@@ -100,7 +110,7 @@ class Company < ApplicationRecord
   end
 
   def team_member_limit
-    return Float::INFINITY if billing_exempt?
+    return Float::INFINITY if access_exempt?
 
     pro_access? ? 100 : 3
   end
@@ -138,19 +148,23 @@ class Company < ApplicationRecord
   end
 
   def trial_active?
+    return false if internal_deployment?
+
     trial_started_at.present? && trial_ends_at.present? && trial_ends_at.future?
   end
 
   def trial_expired?
+    return false if internal_deployment?
+
     trial_started_at.present? && trial_ends_at.present? && trial_ends_at.past?
   end
 
   def trial_available?
-    !billing_exempt? && plan_tier != "paid" && trial_started_at.blank?
+    !access_exempt? && plan_tier != "paid" && trial_started_at.blank?
   end
 
   def pro_access?
-    billing_exempt? || plan_tier == "paid" || trial_active?
+    access_exempt? || plan_tier == "paid" || trial_active?
   end
 
   def stripe_subscription_active?
@@ -167,14 +181,15 @@ class Company < ApplicationRecord
   end
 
   def current_plan_label
-    return "free_pro" if billing_exempt?
     return "paid" if plan_tier == "paid"
+    return "free_pro" if access_exempt?
     return "pro_trial" if trial_active?
 
     "free"
   end
 
   def current_subscription_status
+    return nil if internal_deployment?
     return "trialing" if trial_active? && plan_tier != "paid"
     return "trial_expired" if trial_expired? && plan_tier != "paid"
 

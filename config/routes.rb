@@ -33,11 +33,15 @@ Rails.application.routes.draw do
     end
   end
 
-  devise_for :users, skip: [:sessions, :registrations], controllers: {
+  # Password recovery and invitations are handled by the hardened JSON and
+  # custom invitation flows below. Do not expose Devise's parallel controllers,
+  # which can issue sessions without the internal-deployment allowlist checks.
+  devise_for :users, skip: [:sessions, :registrations, :passwords, :invitations], controllers: {
     confirmations: "users/confirmations",
     omniauth_callbacks: "users/omniauth_callbacks"
   }
   get "/users/sign_in", to: "home#index", as: :new_user_session
+  get "/users/password/edit", to: "home#index", as: :edit_user_password
 
   # For details on the DSL available within this file, see http://guides.rubyonrails.org/routing.html
 

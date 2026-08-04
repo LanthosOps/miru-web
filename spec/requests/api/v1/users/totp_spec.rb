@@ -84,6 +84,24 @@ RSpec.describe "Api::V1::Users::Totp", type: :request do
     expect(json_response["error"]).to eq("Cross-origin authentication is not allowed")
   end
 
+  it "rejects TOTP authentication before issuing a session to a disallowed internal user" do
+    create(:employment, company:, user:)
+    pending_token = Passkeys::ChallengeToken.issue(
+      "company_id" => company.id,
+      "type" => "totp_authentication",
+      "user_id" => user.id
+    )
+    allow(ENV).to receive(:[]).and_call_original
+    allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+    allow(ENV).to receive(:fetch).and_call_original
+    allow(ENV).to receive(:fetch).with("MIRU_ALLOWED_SIGNUP_EMAILS", "").and_return("owner@example.com")
+
+    post "/api/v1/users/totp/authenticate", params: { pending_token:, code: "123456" }
+
+    expect(response).to have_http_status(:forbidden)
+    expect(json_response["error"]).to include("not approved")
+  end
+
   it "requires the current password for TOTP security changes" do
     post "/api/v1/users/totp/setup", params: { current_password: "wrong" }
 

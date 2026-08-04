@@ -113,6 +113,7 @@ export const SETTINGS = [
     Component: Automation,
     category: "personal",
     isTab: true,
+    hiddenForInternalWorkspace: true,
   },
   // Uncomment when Integrating with API
   // {
@@ -204,6 +205,7 @@ export const SETTINGS = [
     Component: Billing,
     category: "organization",
     isTab: true,
+    hiddenForInternalWorkspace: true,
   },
   // Uncomment when Integrating with API
   // {
@@ -223,3 +225,6 @@ export const SETTINGS = [
   // isTab: false,
   // },
 ];
+
+export const isSettingVisibleForWorkspace = (setting, company) =>
+  !setting.hiddenForInternalWorkspace || !company?.internal_deployment;

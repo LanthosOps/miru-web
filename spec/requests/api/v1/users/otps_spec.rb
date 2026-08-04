@@ -76,4 +76,20 @@ RSpec.describe "Api::V1::Users::Otps", type: :request do
     expect(response).to have_http_status(:unprocessable_content)
     expect(json_response["error"]).to eq("OTP expired or invalid. Request a new code.")
   end
+
+  it "rejects a challenge issued before a user is removed from the internal allowlist" do
+    pending_token = MobileOtp::ChallengeToken.issue(
+      { "company_id" => company.id, "phone" => user.phone, "user_id" => user.id },
+      code: "123456"
+    )
+    allow(ENV).to receive(:[]).and_call_original
+    allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+    allow(ENV).to receive(:fetch).and_call_original
+    allow(ENV).to receive(:fetch).with("MIRU_ALLOWED_SIGNUP_EMAILS", "").and_return("owner@example.com")
+
+    post "/api/v1/users/otp/verify", params: { pending_token:, code: "123456" }
+
+    expect(response).to have_http_status(:unprocessable_content)
+    expect(json_response).not_to have_key("user")
+  end
 end

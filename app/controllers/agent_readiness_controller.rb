@@ -329,10 +329,83 @@ class AgentReadinessController < ActionController::Base
             },
             post: {
               summary: "Create a time entry",
+              description: "Creates a time entry. When Idempotency-Key is supplied, an identical request made within 24 hours returns the original response without creating another entry. Reusing the key with different request data returns 409.",
               security: [{ bearerAuth: [] }],
+              parameters: [
+                {
+                  name: "Idempotency-Key",
+                  in: "header",
+                  required: false,
+                  description: "Unique retry key. The UTF-8 value must be no more than 100 bytes.",
+                  schema: {
+                    type: "string"
+                  },
+                  "x-maxBytes": ::Idempotency::Store::MAX_KEY_BYTES
+                }
+              ],
+              requestBody: {
+                required: true,
+                content: {
+                  "application/json": {
+                    schema: {
+                      type: "object",
+                      required: %w[project_id timesheet_entry],
+                      properties: {
+                        project_id: { type: "integer" },
+                        user_id: { type: "integer" },
+                        timesheet_entry: {
+                          type: "object",
+                          required: %w[duration work_date],
+                          properties: {
+                            duration: { type: "number", minimum: 0 },
+                            work_date: { type: "string", format: "date" },
+                            note: { type: "string" },
+                            bill_status: {
+                              type: "string",
+                              enum: %w[non_billable unbilled]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
               responses: {
-                "201": { description: "Time entry created" },
-                "422": { description: "Validation failed" }
+                "200": {
+                  description: "Time entry created, or the original response replayed for an identical idempotent request",
+                  content: {
+                    "application/json": {
+                      schema: { "$ref": "#/components/schemas/TimesheetEntryCreateResponse" }
+                    }
+                  }
+                },
+                "400": {
+                  description: "The idempotency key is invalid",
+                  content: {
+                    "application/json": {
+                      schema: { "$ref": "#/components/schemas/ErrorResponse" },
+                      example: { errors: "Idempotency-Key must be 100 bytes or fewer" }
+                    }
+                  }
+                },
+                "409": {
+                  description: "The idempotency key was already used with different request data",
+                  content: {
+                    "application/json": {
+                      schema: { "$ref": "#/components/schemas/ErrorResponse" },
+                      example: { errors: "Idempotency-Key was already used with different request data" }
+                    }
+                  }
+                },
+                "422": {
+                  description: "The time entry failed validation",
+                  content: {
+                    "application/json": {
+                      schema: { "$ref": "#/components/schemas/ErrorResponse" }
+                    }
+                  }
+                }
               }
             }
           },
@@ -387,6 +460,48 @@ class AgentReadinessController < ActionController::Base
             bearerAuth: {
               type: "http",
               scheme: "bearer"
+            }
+          },
+          schemas: {
+            ErrorResponse: {
+              type: "object",
+              required: ["errors"],
+              properties: {
+                errors: { type: "string" }
+              }
+            },
+            TimesheetEntryCreateResponse: {
+              type: "object",
+              required: %w[notice entry],
+              properties: {
+                notice: { type: "string" },
+                entry: {
+                  type: "object",
+                  additionalProperties: true,
+                  required: %w[id project project_id client duration work_date bill_status review_status
+                    team_member source type],
+                  properties: {
+                    id: { type: "integer" },
+                    project: { type: "string" },
+                    project_id: { type: "integer" },
+                    client: { type: "string" },
+                    duration: { type: "number" },
+                    note: { type: ["string", "null"] },
+                    work_date: { type: "string", format: "date" },
+                    bill_status: { type: "string" },
+                    review_status: { type: "string" },
+                    team_member: { type: "string" },
+                    agent_id: { type: ["integer", "null"] },
+                    agent_name: { type: ["string", "null"] },
+                    source: { type: "string" },
+                    source_label: { type: ["string", "null"] },
+                    source_metadata: { type: "object", additionalProperties: true },
+                    proof_url: { type: ["string", "null"] },
+                    proof_metadata: { type: "object", additionalProperties: true },
+                    type: { type: "string", const: "timesheet" }
+                  }
+                }
+              }
             }
           }
         }

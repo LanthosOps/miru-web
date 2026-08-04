@@ -11,11 +11,20 @@ import { SETTINGS } from "./routes";
 
 import UserDetailsView from "../Personal/User";
 
-const ProtectedRoute = ({ role, authorisedRoles, children }) => {
-  const { loading } = useUserContext();
+const ProtectedRoute = ({
+  role,
+  authorisedRoles,
+  hiddenForInternalWorkspace,
+  children,
+}) => {
+  const { company, loading } = useUserContext();
 
   if (loading || !role) {
     return <Loader className="h-screen" />;
+  }
+
+  if (hiddenForInternalWorkspace && company?.internal_deployment) {
+    return <Navigate replace to="/settings/organization" />;
   }
 
   if (authorisedRoles.includes(role)) {
@@ -52,13 +61,19 @@ const RouteConfig = () => {
         <Route element={<Layout />} path="team/:memberId">
           <Route index element={<UserDetailsView />} />
           {SETTINGS.filter(({ category }) => category === "personal").map(
-            ({ path, authorisedRoles, Component }) => (
+            ({
+              path,
+              authorisedRoles,
+              hiddenForInternalWorkspace,
+              Component,
+            }) => (
               <Route
                 key={path}
                 path={path}
                 element={
                   <ProtectedRoute
                     authorisedRoles={authorisedRoles}
+                    hiddenForInternalWorkspace={hiddenForInternalWorkspace}
                     role={companyRole}
                   >
                     <Component />
@@ -73,40 +88,56 @@ const RouteConfig = () => {
       {isSettingsContext && (
         <Route element={<Layout />} path="*">
           <Route index element={<Navigate to="/settings/profile" replace />} />
-          {SETTINGS.map(({ path, authorisedRoles, Component }) => (
-            <Route
-              key={path}
-              path={path}
-              element={
-                <ProtectedRoute
-                  authorisedRoles={authorisedRoles}
-                  role={companyRole}
-                >
-                  <Component />
-                </ProtectedRoute>
-              }
-            />
-          ))}
+          {SETTINGS.map(
+            ({
+              path,
+              authorisedRoles,
+              hiddenForInternalWorkspace,
+              Component,
+            }) => (
+              <Route
+                key={path}
+                path={path}
+                element={
+                  <ProtectedRoute
+                    authorisedRoles={authorisedRoles}
+                    hiddenForInternalWorkspace={hiddenForInternalWorkspace}
+                    role={companyRole}
+                  >
+                    <Component />
+                  </ProtectedRoute>
+                }
+              />
+            )
+          )}
         </Route>
       )}
       {/* Fallback for neither context - render all routes */}
       {!isTeamContext && !isSettingsContext && (
         <Route element={<Layout />} path="*">
           <Route index element={<UserDetailsView />} />
-          {SETTINGS.map(({ path, authorisedRoles, Component }) => (
-            <Route
-              key={path}
-              path={path}
-              element={
-                <ProtectedRoute
-                  authorisedRoles={authorisedRoles}
-                  role={companyRole}
-                >
-                  <Component />
-                </ProtectedRoute>
-              }
-            />
-          ))}
+          {SETTINGS.map(
+            ({
+              path,
+              authorisedRoles,
+              hiddenForInternalWorkspace,
+              Component,
+            }) => (
+              <Route
+                key={path}
+                path={path}
+                element={
+                  <ProtectedRoute
+                    authorisedRoles={authorisedRoles}
+                    hiddenForInternalWorkspace={hiddenForInternalWorkspace}
+                    role={companyRole}
+                  >
+                    <Component />
+                  </ProtectedRoute>
+                }
+              />
+            )
+          )}
         </Route>
       )}
       <Route element={<ErrorPage />} path="*" />

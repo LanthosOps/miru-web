@@ -1,6 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { MIRU_APP_URL } from "constants/index";
-import { MiruLogoWithTextSVG } from "miruIcons";
 import dashboardPreview from "@/assets/images/auth/dashboard-preview.png";
 import dashboardPreviewDark from "@/assets/images/auth/dashboard-preview-dark.png";
 import invoicesPreview from "@/assets/images/auth/invoices-preview.png";
@@ -9,7 +7,9 @@ import paymentsPreview from "@/assets/images/auth/payments-preview.png";
 import paymentsPreviewDark from "@/assets/images/auth/payments-preview-dark.png";
 import timeTrackingPreview from "@/assets/images/auth/time-tracking-preview.png";
 import timeTrackingPreviewDark from "@/assets/images/auth/time-tracking-preview-dark.png";
+import BrandLogo from "common/BrandLogo";
 import { useUserContext } from "context/UserContext";
+import { productHomeUrl } from "../../lib/internalDeployment";
 import { LANGUAGE_OPTIONS, t } from "../../i18n";
 import AuthThemeToggle from "./AuthThemeToggle";
 
@@ -123,16 +123,12 @@ const AuthShell = ({ children, description, title }: AuthShellProps) => {
           <div className="mx-auto flex w-full max-w-md flex-col">
             <a
               className="mb-8 inline-flex items-center justify-center self-center"
-              href={MIRU_APP_URL}
+              href={productHomeUrl()}
               rel="noreferrer noopener"
             >
-              <img
-                alt="Miru"
-                className="h-10 w-auto object-contain transition"
-                src={MiruLogoWithTextSVG}
-                style={{
-                  filter: theme === "dark" ? "brightness(0) invert(1)" : "none",
-                }}
+              <BrandLogo
+                className="transition"
+                imageClassName="h-10 w-auto object-contain"
               />
             </a>
             <div className="rounded-3xl border border-border bg-card/95 p-6 shadow-xl backdrop-blur sm:p-8">

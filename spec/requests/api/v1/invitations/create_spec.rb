@@ -13,6 +13,23 @@ RSpec.describe "Api::V1::Invitations#create", type: :request do
   end
 
   context "when new user is invited" do
+    it "rejects recipients outside the internal allowlist" do
+      allow(ENV).to receive(:[]).and_call_original
+      allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+      allow(ENV).to receive(:fetch).and_call_original
+      allow(ENV).to receive(:fetch).with("MIRU_ALLOWED_SIGNUP_EMAILS", "").and_return(user.email)
+
+      send_request :post, api_v1_invitations_path, params: {
+        first_name: "Not",
+        last_name: "Approved",
+        recipient_email: "other@example.com",
+        role: "employee"
+      }, headers: auth_headers(user)
+
+      expect(response).to have_http_status(:forbidden)
+      expect(Invitation.count).to eq(0)
+    end
+
     it "forbids an admin from inviting an owner" do
       send_request :post, api_v1_invitations_path, params: {
         first_name: "New",

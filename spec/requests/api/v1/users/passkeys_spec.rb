@@ -90,6 +90,25 @@ RSpec.describe "Api::V1::Users::Passkeys", type: :request do
     expect(json_response["error"]).to eq("Cross-origin authentication is not allowed")
   end
 
+  it "rejects passkey authentication before issuing a session to a disallowed internal user" do
+    create(:employment, company:, user:)
+    pending_token = Passkeys::ChallengeToken.issue(
+      "challenge" => "challenge",
+      "company_id" => company.id,
+      "type" => "authentication",
+      "user_id" => user.id
+    )
+    allow(ENV).to receive(:[]).and_call_original
+    allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+    allow(ENV).to receive(:fetch).and_call_original
+    allow(ENV).to receive(:fetch).with("MIRU_ALLOWED_SIGNUP_EMAILS", "").and_return("owner@example.com")
+
+    post "/api/v1/users/passkeys/authenticate", params: { pending_token:, credential: {} }
+
+    expect(response).to have_http_status(:forbidden)
+    expect(json_response["error"]).to include("not approved")
+  end
+
   it "requires the current password for passkey security changes" do
     post "/api/v1/users/passkeys/registration_options", params: { current_password: "wrong" }
 

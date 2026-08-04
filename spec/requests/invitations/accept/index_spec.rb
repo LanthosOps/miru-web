@@ -69,4 +69,23 @@ RSpec.describe "Invitations::Accept#create", type: :request do
       expect(flash[:error]).to eq("You are already signed in.")
     end
   end
+
+  context "when a legacy invitation recipient is not approved for internal access" do
+    before do
+      allow(ENV).to receive(:[]).and_call_original
+      allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+      allow(ENV).to receive(:fetch).and_call_original
+      allow(ENV).to receive(:fetch).with("MIRU_ALLOWED_SIGNUP_EMAILS", "").and_return("owner@example.com")
+
+      send_request :get, invitations_accepts_url(token: invitation.token)
+    end
+
+    it "redirects to the invalid-link screen without creating access" do
+      expect(response).to redirect_to("/invalid-link")
+      expect(flash[:error]).to eq("Invitation is not approved for this internal workspace.")
+      expect(invitation.reload.accepted_at).to be_nil
+      expect(User.exists?(email: invitation.recipient_email)).to eq(false)
+      expect(company.employments).to be_empty
+    end
+  end
 end

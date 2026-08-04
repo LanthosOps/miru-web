@@ -9,6 +9,12 @@ import { Formik, Form, FormikProps } from "formik";
 import { GithubIcon, GoogleSVG } from "miruIcons";
 import { useNavigate } from "react-router-dom";
 
+import {
+  githubOauthEnabled,
+  googleOauthEnabled,
+  internalDeploymentEnabled,
+} from "../../../lib/internalDeployment";
+
 import PrivacyPolicyModal from "./PrivacyPolicyModal";
 import TermsOfServiceModal from "./TermsOfServiceModal";
 import { t } from "../../../i18n";
@@ -29,6 +35,10 @@ interface SignUpFormValues {
 
 const SignUpForm = () => {
   const { locale } = useUserContext();
+  const googleOauthAvailable = googleOauthEnabled();
+  const githubOauthAvailable = githubOauthEnabled();
+  const isInternalDeployment = internalDeploymentEnabled();
+  const oauthAvailable = googleOauthAvailable || githubOauthAvailable;
   const [privacyModal, setPrivacyModal] = useState(false);
   const [termsOfServiceModal, setTermsOfServiceModal] = useState(false);
   const navigate = useNavigate();
@@ -124,66 +134,81 @@ const SignUpForm = () => {
       title={t("auth.signUp.title")}
     >
       <div>
-        <Formik
-          initialValues={{}}
-          validateOnBlur={false}
-          validationSchema=""
-          onSubmit={() => {}}
-        >
-          {() => (
-            <div className="mb-6 space-y-3">
-              <Form
-                action="/users/auth/google_oauth2"
-                method="post"
-                ref={googleOauth}
-              >
-                <input
-                  name="authenticity_token"
-                  type="hidden"
-                  value={csrfToken}
-                />
-                <button
-                  className="flex w-full items-center justify-center rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground shadow-sm transition hover:bg-accent"
-                  type="submit"
-                  onClick={handleGoogleAuth}
-                >
-                  <img alt="" className="mr-2" src={GoogleSVG} />
-                  {t("auth.signUp.continueWithGoogle")}
-                </button>
-              </Form>
-              <Form action="/users/auth/github" method="post" ref={githubOauth}>
-                <input
-                  name="authenticity_token"
-                  type="hidden"
-                  value={csrfToken}
-                />
-                <button
-                  className="flex w-full items-center justify-center rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground shadow-sm transition hover:bg-accent"
-                  type="submit"
-                  onClick={handleGithubAuth}
-                >
-                  <GithubIcon
-                    className="mr-2 h-4 w-4 text-foreground"
-                    weight="fill"
-                  />
-                  {t("auth.signUp.continueWithGitHub")}
-                </button>
-              </Form>
-            </div>
-          )}
-        </Formik>
-        <div className="relative mb-6 flex items-center">
-          <div className="flex-grow border-t border-border" />
-          <span className="mx-4 flex-shrink text-xs uppercase tracking-[0.18em] text-muted-foreground">
-            {t("auth.signUp.orUseEmail")}
-          </span>
-          <div className="flex-grow border-t border-border" />
-        </div>
+        {oauthAvailable && (
+          <Formik
+            initialValues={{}}
+            validateOnBlur={false}
+            validationSchema=""
+            onSubmit={() => {}}
+          >
+            {() => (
+              <div className="mb-6 space-y-3">
+                {googleOauthAvailable && (
+                  <Form
+                    action="/users/auth/google_oauth2"
+                    method="post"
+                    ref={googleOauth}
+                  >
+                    <input
+                      name="authenticity_token"
+                      type="hidden"
+                      value={csrfToken}
+                    />
+                    <button
+                      className="flex w-full items-center justify-center rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground shadow-sm transition hover:bg-accent"
+                      type="submit"
+                      onClick={handleGoogleAuth}
+                    >
+                      <img alt="" className="mr-2" src={GoogleSVG} />
+                      {t("auth.signUp.continueWithGoogle")}
+                    </button>
+                  </Form>
+                )}
+                {githubOauthAvailable && (
+                  <Form
+                    action="/users/auth/github"
+                    method="post"
+                    ref={githubOauth}
+                  >
+                    <input
+                      name="authenticity_token"
+                      type="hidden"
+                      value={csrfToken}
+                    />
+                    <button
+                      className="flex w-full items-center justify-center rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground shadow-sm transition hover:bg-accent"
+                      type="submit"
+                      onClick={handleGithubAuth}
+                    >
+                      <GithubIcon
+                        className="mr-2 h-4 w-4 text-foreground"
+                        weight="fill"
+                      />
+                      {t("auth.signUp.continueWithGitHub")}
+                    </button>
+                  </Form>
+                )}
+              </div>
+            )}
+          </Formik>
+        )}
+        {oauthAvailable && (
+          <div className="relative mb-6 flex items-center">
+            <div className="flex-grow border-t border-border" />
+            <span className="mx-4 flex-shrink text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              {t("auth.signUp.orUseEmail")}
+            </span>
+            <div className="flex-grow border-t border-border" />
+          </div>
+        )}
         <div>
           <Formik
             key={locale}
             validateOnBlur
-            initialValues={signUpFormInitialValues}
+            initialValues={{
+              ...signUpFormInitialValues,
+              isAgreedTermsOfServices: isInternalDeployment,
+            }}
             validateOnChange={false}
             validationSchema={buildSignUpFormValidationSchema()}
             onSubmit={handleSignUpFormSubmit}
@@ -293,44 +318,53 @@ const SignUpForm = () => {
                       fieldTouched={touched.confirm_password}
                     />
                   </div>
-                  <div className="my-5 flex items-start gap-2 text-xs text-muted-foreground">
-                    <input
-                      checked={values.isAgreedTermsOfServices}
-                      className="mt-0.5 h-4 w-4 rounded border-border bg-background accent-primary"
-                      id="termsOfService"
-                      name="agreeToTerms"
-                      onChange={event => {
-                        setFieldValue(
-                          "isAgreedTermsOfServices",
-                          event.target.checked
-                        );
-                        setFieldTouched("isAgreedTermsOfServices", false);
-                      }}
-                      type="checkbox"
-                    />
-                    <label className="leading-5" htmlFor="termsOfService">
-                      {t("auth.signUp.agreePrefix")}{" "}
-                      <button
-                        className="text-foreground hover:text-primary"
-                        onClick={handleTermsOfService}
-                        type="button"
-                      >
-                        {t("auth.signUp.termsOfService")}
-                      </button>{" "}
-                      {t("auth.signUp.and")}{" "}
-                      <button
-                        className="text-foreground hover:text-primary"
-                        onClick={handlePrivacyPolicy}
-                        type="button"
-                      >
-                        {t("auth.signUp.privacyPolicy")}
-                      </button>
-                    </label>
-                  </div>
-                  <InputErrors
-                    fieldErrors={errors.isAgreedTermsOfServices}
-                    fieldTouched={touched.isAgreedTermsOfServices}
-                  />
+                  {isInternalDeployment ? (
+                    <p className="my-5 rounded-xl border border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
+                      Approved internal access only. Your account must match the
+                      owner allowlist.
+                    </p>
+                  ) : (
+                    <>
+                      <div className="my-5 flex items-start gap-2 text-xs text-muted-foreground">
+                        <input
+                          checked={values.isAgreedTermsOfServices}
+                          className="mt-0.5 h-4 w-4 rounded border-border bg-background accent-primary"
+                          id="termsOfService"
+                          name="agreeToTerms"
+                          onChange={event => {
+                            setFieldValue(
+                              "isAgreedTermsOfServices",
+                              event.target.checked
+                            );
+                            setFieldTouched("isAgreedTermsOfServices", false);
+                          }}
+                          type="checkbox"
+                        />
+                        <label className="leading-5" htmlFor="termsOfService">
+                          {t("auth.signUp.agreePrefix")}{" "}
+                          <button
+                            className="text-foreground hover:text-primary"
+                            onClick={handleTermsOfService}
+                            type="button"
+                          >
+                            {t("auth.signUp.termsOfService")}
+                          </button>{" "}
+                          {t("auth.signUp.and")}{" "}
+                          <button
+                            className="text-foreground hover:text-primary"
+                            onClick={handlePrivacyPolicy}
+                            type="button"
+                          >
+                            {t("auth.signUp.privacyPolicy")}
+                          </button>
+                        </label>
+                      </div>
+                      <InputErrors
+                        fieldErrors={errors.isAgreedTermsOfServices}
+                        fieldTouched={touched.isAgreedTermsOfServices}
+                      />
+                    </>
+                  )}
                   <div className="mb-3">
                     <button
                       type="submit"
@@ -348,13 +382,13 @@ const SignUpForm = () => {
             }}
           </Formik>
           <div className="mt-4">
-            {privacyModal && (
+            {!isInternalDeployment && privacyModal && (
               <PrivacyPolicyModal
                 isOpen={privacyModal}
                 onClose={() => setPrivacyModal(false)}
               />
             )}
-            {termsOfServiceModal && (
+            {!isInternalDeployment && termsOfServiceModal && (
               <TermsOfServiceModal
                 isOpen={termsOfServiceModal}
                 onClose={() => setTermsOfServiceModal(false)}
@@ -371,23 +405,25 @@ const SignUpForm = () => {
               </a>
             </span>
           </p>
-          <div className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-            <button
-              className="hover:text-foreground"
-              onClick={handlePrivacyPolicy}
-              type="button"
-            >
-              {t("auth.signIn.privacy")}
-            </button>
-            <span>•</span>
-            <button
-              className="hover:text-foreground"
-              onClick={handleTermsOfService}
-              type="button"
-            >
-              {t("auth.signIn.terms")}
-            </button>
-          </div>
+          {!isInternalDeployment && (
+            <div className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+              <button
+                className="hover:text-foreground"
+                onClick={handlePrivacyPolicy}
+                type="button"
+              >
+                {t("auth.signIn.privacy")}
+              </button>
+              <span>•</span>
+              <button
+                className="hover:text-foreground"
+                onClick={handleTermsOfService}
+                type="button"
+              >
+                {t("auth.signIn.terms")}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </AuthShell>

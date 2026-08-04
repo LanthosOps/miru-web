@@ -36,6 +36,10 @@ import { fetchNewLineItems } from "../common/utils";
 import { lineTotalCalc } from "../../../helpers";
 import { i18n } from "../../../i18n";
 import { InvoiceTax, TaxConfiguration } from "../../../services/invoiceApi";
+import {
+  internalDeploymentEnabled,
+  productName,
+} from "../../../lib/internalDeployment";
 
 interface InvoiceEditorProps {
   invoice?: any;
@@ -54,8 +58,10 @@ const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
   invoice,
   clients,
   company = {
-    name: "Miru Time Tracking",
-    email: "support@getmiru.com",
+    name: productName(),
+    email: internalDeploymentEnabled()
+      ? "support@datapulsetech.ai"
+      : "support@getmiru.com",
     baseCurrency: "USD",
     dateFormat: "MM/dd/yyyy",
     address: "",

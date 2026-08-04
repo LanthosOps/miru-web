@@ -10,20 +10,25 @@ import List from "./List";
 import UserInformation from "./UserInformation";
 import { t } from "../../../../i18n";
 
-import { SETTINGS } from "../routes";
+import { isSettingVisibleForWorkspace, SETTINGS } from "../routes";
 
 const MobileNav = () => {
-  const { companyRole, isDesktop, user, isAdminUser } = useUserContext();
+  const { companyRole, company, isDesktop, user, isAdminUser } =
+    useUserContext();
   const navigate = useNavigate();
   const [currentWorkspace, setCurrentWorkspace] = useState<any>({});
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const personalSettings = SETTINGS.filter(
-    ({ category }) => category === "personal"
+    setting =>
+      setting.category === "personal" &&
+      isSettingVisibleForWorkspace(setting, company)
   );
 
   const organizationalSettings = SETTINGS.filter(
-    ({ category }) => category === "organization"
+    setting =>
+      setting.category === "organization" &&
+      isSettingVisibleForWorkspace(setting, company)
   );
 
   const getCurrentWorkspace = async () => {

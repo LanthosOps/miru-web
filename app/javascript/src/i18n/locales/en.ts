@@ -99,7 +99,7 @@ const en = {
     choose: "Choose Theme",
     description: "Select your preferred interface style",
     classic: "Classic",
-    classicDescription: "Traditional Miru interface",
+    classicDescription: "Traditional invoice interface",
     admin: "Admin Pro",
     adminDescription: "Modern shadcn dashboard",
     minimize: "Minimize",
@@ -867,7 +867,7 @@ const en = {
     webTimer: "Web timer",
     webTimerLabel: "Web Timer",
     trackLiveWork:
-      "Track live work in real time. Web and MiruTime stay in sync for the active workspace.",
+      "Track live work in real time. Web and the desktop timer stay in sync for the active workspace.",
     startTimer: "Start Timer",
     pause: "Pause",
     resume: "Resume",
@@ -881,7 +881,7 @@ const en = {
     untitledTimer: "Untitled timer",
     activeTimers: "%{count} active",
     localTimer: "Local timer",
-    sharedWithDesktop: "Shared with MiruTime",
+    sharedWithDesktop: "Shared with desktop timer",
     saveTimeEntry: "Save Time Entry",
     saveTimeEntryDescription:
       "You tracked %{time}. Would you like to save this as a time entry?",
@@ -1252,7 +1252,7 @@ const en = {
     import: "Import",
   },
   importCatalog: {
-    subtitle: "Import your data into Miru",
+    subtitle: "Import your data into this workspace",
     invoices: {
       title: "Invoices",
       description:
@@ -1371,7 +1371,7 @@ const en = {
     addAction: "Add passkey",
     requirementTitle: "Require passkey on sign in",
     requirementDescription:
-      "After your password, Miru will require a passkey to complete sign in.",
+      "After your password, %{productName} will require a passkey to complete sign in.",
     emptyState: "No passkeys added yet.",
     fallbackName: "Passkey",
     addedAt: "Added %{time}",
@@ -1635,7 +1635,7 @@ const en = {
     confirmUnsubscribeAction: "Yes, Unsubscribe from All",
     unsubscribedTitle: "You're Unsubscribed from All Emails",
     unsubscribedDescription:
-      "You are currently unsubscribed from all email notifications. You won't receive any emails from Miru.",
+      "You are currently unsubscribed from all email notifications. You won't receive any emails from %{productName}.",
     resubscribeAction: "Re-enable Email Notifications",
     enabledCount: "%{count} of %{total} enabled",
     deliveryTitle: "Email Delivery Settings",
@@ -1644,7 +1644,7 @@ const en = {
       "All notifications will be sent to this email address. To change your email, please update it in your profile settings.",
     unsubscribeTitle: "Unsubscribe",
     unsubscribeDescription:
-      "If you no longer wish to receive any emails from Miru, you can unsubscribe from all notifications. This will stop all email communications including important billing and invoice notifications.",
+      "If you no longer wish to receive any emails from %{productName}, you can unsubscribe from all notifications. This will stop all email communications including important billing and invoice notifications.",
     unsubscribeAction: "Unsubscribe from All Emails",
     badges: {
       active: "Active",
@@ -1819,7 +1819,7 @@ const en = {
     quickBooksTitle: "QuickBooks Online",
     quickBooksAccounting: "Accounting sync",
     quickBooksDescription:
-      "Sync Miru clients, invoices, and payments with QuickBooks Online accounting.",
+      "Sync workspace clients, invoices, and payments with QuickBooks Online accounting.",
     quickBooksSetupRequired: "OAuth credentials required",
     quickBooksSetupDescription:
       "Add QuickBooks OAuth credentials before connecting a company.",

@@ -35,4 +35,17 @@ RSpec.describe SyncStripeSubscriptionCompanyJob, type: :job do
 
     expect(Subscriptions::SeatReconciliationService).to have_received(:process).with(company:)
   end
+
+  it "does not touch Stripe in an internal deployment" do
+    company = create(:company, stripe_customer_id: "cus_internal")
+    allow(ENV).to receive(:[]).and_call_original
+    allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+    allow(Subscriptions::StripeSyncService).to receive(:process)
+    allow(Subscriptions::SeatReconciliationService).to receive(:process)
+
+    described_class.perform_now(company.id)
+
+    expect(Subscriptions::StripeSyncService).not_to have_received(:process)
+    expect(Subscriptions::SeatReconciliationService).not_to have_received(:process)
+  end
 end

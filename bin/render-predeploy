@@ -3,3 +3,4 @@ set -euo pipefail
 
 bundle exec rails db:prepare
 bundle exec rails data:migrate
+bundle exec rake internal_deployment:startup

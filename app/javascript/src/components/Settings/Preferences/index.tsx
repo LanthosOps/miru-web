@@ -26,6 +26,10 @@ import { Button } from "../../ui/button";
 import { Alert, AlertDescription, AlertTitle } from "../../ui/alert";
 import { cn } from "../../../lib/utils";
 import { i18n } from "../../../i18n";
+import {
+  internalDeploymentEnabled,
+  productName,
+} from "../../../lib/internalDeployment";
 
 interface PreferenceItem {
   id: string;
@@ -367,7 +371,11 @@ const PreferencesSettingsPage: React.FC = () => {
               </AlertTitle>
               <AlertDescription className="text-muted-foreground">
                 <p className="mb-4">
-                  {i18n.t("preferencesSettings.unsubscribedDescription")}
+                  {internalDeploymentEnabled()
+                    ? `You are currently unsubscribed from all email notifications. You won't receive any emails from ${productName()}.`
+                    : i18n.t("preferencesSettings.unsubscribedDescription", {
+                        productName: productName(),
+                      })}
                 </p>
                 <Button
                   size="sm"
@@ -529,7 +537,11 @@ const PreferencesSettingsPage: React.FC = () => {
               <CardContent>
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">
-                    {i18n.t("preferencesSettings.unsubscribeDescription")}
+                    {internalDeploymentEnabled()
+                      ? `If you no longer wish to receive any emails from ${productName()}, you can unsubscribe from all notifications. This will stop all email communications including important billing and invoice notifications.`
+                      : i18n.t("preferencesSettings.unsubscribeDescription", {
+                          productName: productName(),
+                        })}
                   </p>
                   <Button
                     variant="outline"

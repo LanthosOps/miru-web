@@ -1,29 +1,37 @@
-<% content_for :email_preheader, t("mailers.devise.confirmation.preheader") %>
-<% content_for :email_eyebrow, t("mailers.devise.confirmation.eyebrow") %>
-<% content_for :email_title, t("mailers.devise.confirmation.title") %>
+<% internal_deployment = InternalDeployment.enabled? %>
+<% content_for :email_preheader, internal_deployment ? "Verify your Lanthos Ops email address." : t("mailers.devise.confirmation.preheader") %>
+<% content_for :email_eyebrow, internal_deployment ? "Account security" : t("mailers.devise.confirmation.eyebrow") %>
+<% content_for :email_title, internal_deployment ? "Verify your email" : t("mailers.devise.confirmation.title") %>
 <% content_for :email_subtitle do %>
-  <%= t("mailers.devise.confirmation.subtitle") %>
+  <%= internal_deployment ? "Finish setting up your approved Lanthos Ops account." : t("mailers.devise.confirmation.subtitle") %>
 <% end %>
 
-<p><%= t("mailers.devise.confirmation.greeting_html", name: "#{@resource.first_name.titleize} #{@resource.last_name.titleize}") %></p>
+<p><%= internal_deployment ? "Hello #{@resource.first_name.titleize} #{@resource.last_name.titleize}," : t("mailers.devise.confirmation.greeting_html", name: "#{@resource.first_name.titleize} #{@resource.last_name.titleize}") %></p>
 
-<p><%= t("mailers.devise.confirmation.body_intro") %></p>
+<p><%= internal_deployment ? "Confirm this email address to securely access the internal operations workspace." : t("mailers.devise.confirmation.body_intro") %></p>
 
 <div class="email-panel email-panel-soft">
   <ul class="email-list">
-    <li><%= t("mailers.devise.confirmation.feature_1") %></li>
-    <li><%= t("mailers.devise.confirmation.feature_2") %></li>
-    <li><%= t("mailers.devise.confirmation.feature_3") %></li>
-    <li><%= t("mailers.devise.confirmation.feature_4") %></li>
+    <% if internal_deployment %>
+      <li>Manage internal work and operations</li>
+      <li>Track time, projects, and requests</li>
+      <li>Review invoices and financial activity</li>
+      <li>Keep account access protected</li>
+    <% else %>
+      <li><%= t("mailers.devise.confirmation.feature_1") %></li>
+      <li><%= t("mailers.devise.confirmation.feature_2") %></li>
+      <li><%= t("mailers.devise.confirmation.feature_3") %></li>
+      <li><%= t("mailers.devise.confirmation.feature_4") %></li>
+    <% end %>
   </ul>
 </div>
 
-<p><%= t("mailers.devise.confirmation.cta_body") %></p>
+<p><%= internal_deployment ? "Use the button below to verify your address." : t("mailers.devise.confirmation.cta_body") %></p>
 
-<%= render "shared/mailer/button", href: confirmation_url(@resource, confirmation_token: @token), label: t("mailers.devise.confirmation.cta") %>
+<%= render "shared/mailer/button", href: confirmation_url(@resource, confirmation_token: @token), label: internal_deployment ? "Verify email" : t("mailers.devise.confirmation.cta") %>
 
 <div class="email-divider"></div>
 
-<p class="email-muted"><%= t("mailers.devise.confirmation.footer_note") %></p>
+<p class="email-muted"><%= internal_deployment ? "If you did not request this account, you can ignore this message." : t("mailers.devise.confirmation.footer_note") %></p>
 
-<p><%= t("mailers.devise.shared.signature_html") %></p>
+<p><%= internal_deployment ? "Lanthos Ops" : t("mailers.devise.shared.signature_html") %></p>

@@ -15,6 +15,8 @@ module Subscriptions
     end
 
     def process
+      return false if InternalDeployment.enabled?
+
       target_company = company || find_company
       return false if target_company.blank?
 

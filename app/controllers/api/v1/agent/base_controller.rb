@@ -17,6 +17,8 @@ class Api::V1::Agent::BaseController < Api::V1::ApplicationController
 
       @current_agent_key = agent_key
       @current_agent = agent_key.agent
+      return unless ensure_internal_deployment_user_allowed!(@current_agent.user)
+
       sign_in @current_agent.user, store: false
       current_user.current_workspace = @current_agent.company
     end

@@ -31,10 +31,12 @@ Devise.setup do |config|
   # Configure the e-mail address which will be shown in Devise::Mailer,
   # note that it will be overwritten if you use your own mailer class
   # with default "from" parameter.
-  config.mailer_sender = ENV["DEFAULT_MAILER_SENDER"].presence || "Miru <support@getmiru.com>"
+  internal_deployment = ActiveModel::Type::Boolean.new.cast(ENV["MIRU_INTERNAL_DEPLOYMENT"])
+  default_mailer_sender = internal_deployment ? "Lanthos Ops <support@datapulsetech.ai>" : "Miru <support@getmiru.com>"
+  config.mailer_sender = ENV["DEFAULT_MAILER_SENDER"].presence || default_mailer_sender
 
   # Configure the class responsible to send e-mails.
-  # config.mailer = 'Devise::Mailer'
+  config.mailer = "InternalDeviseMailer"
 
   # Configure the parent class responsible to send e-mails.
   # config.parent_mailer = 'ActionMailer::Base'

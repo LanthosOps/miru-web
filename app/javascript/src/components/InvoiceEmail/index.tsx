@@ -2,11 +2,13 @@ import React, { useEffect, useState } from "react";
 
 import { invoicesApi } from "apis/api";
 import Loader from "common/Loader";
+import BrandLogo from "common/BrandLogo";
 import MobileView from "components/ClientInvoices/Details/MobileView";
 import ConnectPaymentGateway from "components/Invoices/popups/ConnectPaymentGateway";
 import StripeDisabledInvoice from "components/Invoices/popups/StripeDisabledInvoice";
 import { useUserContext } from "context/UserContext";
-import { InstagramSVG, TwitterSVG, MiruLogoWithTextSVG } from "miruIcons";
+import { InstagramSVG, TwitterSVG } from "miruIcons";
+import { internalDeploymentEnabled } from "../../lib/internalDeployment";
 import { useParams, useNavigate } from "react-router-dom";
 
 import Header from "./Header";
@@ -51,11 +53,12 @@ const InvoiceEmail = () => {
   }
 
   const { url, invoice, logo, lineItems, company, client, upi_payment } = data;
+  const isInternalDeployment = internalDeploymentEnabled();
 
   return isDesktop ? (
     <div className="flex flex-col justify-between">
       <div className="flex h-16 justify-start bg-primary px-24 font-sans text-white">
-        <img src={MiruLogoWithTextSVG} />
+        <BrandLogo imageClassName="h-8 w-auto" />
       </div>
       <div className="mx-auto max-w-6xl px-2 font-sans md:px-11">
         <Header
@@ -94,23 +97,26 @@ const InvoiceEmail = () => {
       </div>
       <div className="flex justify-between bg-primary px-28 py-3 font-sans text-white">
         <span className="text-center text-xs font-normal leading-4">
-          © Miru. All rights reserved.
+          © {isInternalDeployment ? "Lanthos Ops" : "Miru"}. All rights
+          reserved.
         </span>
-        <span className="flex w-1/4 justify-between text-center text-xs font-normal leading-4">
-          <a href="https://www.miru.so/" rel="noreferrer" target="_blank">
-            miru.so/
-          </a>
-          <a
-            href="https://www.instagram.com/getmiru/"
-            rel="noreferrer"
-            target="_blank"
-          >
-            <img height="16px" src={InstagramSVG} width="16px" />
-          </a>
-          <a href="https://x.com/getmiru" rel="noreferrer" target="_blank">
-            <img height="16px" src={TwitterSVG} width="16px" />
-          </a>
-        </span>
+        {!isInternalDeployment && (
+          <span className="flex w-1/4 justify-between text-center text-xs font-normal leading-4">
+            <a href="https://www.miru.so/" rel="noreferrer" target="_blank">
+              miru.so/
+            </a>
+            <a
+              href="https://www.instagram.com/getmiru/"
+              rel="noreferrer"
+              target="_blank"
+            >
+              <img height="16px" src={InstagramSVG} width="16px" />
+            </a>
+            <a href="https://x.com/getmiru" rel="noreferrer" target="_blank">
+              <img height="16px" src={TwitterSVG} width="16px" />
+            </a>
+          </span>
+        )}
       </div>
     </div>
   ) : (

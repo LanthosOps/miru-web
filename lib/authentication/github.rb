@@ -11,29 +11,41 @@ module Authentication
     def user!
       return if @user_data.blank? || github_id.blank? || candidate_emails.blank?
 
-      Identity.github_auth.find_by(uid: github_id)&.user || create_user!
+      identity_user = Identity.github_auth.find_by(uid: github_id)&.user
+      return identity_user if identity_user && InternalDeployment.authenticated_user_allowed?(identity_user)
+      return if identity_user
+
+      existing_user = User.find_by(email: candidate_emails)
+      if existing_user
+        return unless InternalDeployment.authenticated_user_allowed?(existing_user)
+
+        existing_user.identities.find_or_create_by(provider: PROVIDER, uid: github_id)
+        return existing_user
+      end
+
+      return unless signup_email
+
+      create_user!
     end
 
     private
 
       def create_user!
-        user = User.find_by(email: candidate_emails)
-
-        if user.present?
-          user.identities.find_or_create_by(provider: PROVIDER, uid: github_id)
-        else
-          user = User.new(
-            email: candidate_emails.first,
-            first_name: first_name,
-            last_name:,
-            password: Devise.friendly_token[0, 20]
-          )
-          user.skip_confirmation!
-          user.save!
-          user.identities.create!(provider: PROVIDER, uid: github_id)
-        end
+        user = User.new(
+          email: signup_email,
+          first_name: first_name,
+          last_name:,
+          password: Devise.friendly_token[0, 20]
+        )
+        user.skip_confirmation!
+        user.save!
+        user.identities.create!(provider: PROVIDER, uid: github_id)
 
         user
+      end
+
+      def signup_email
+        @signup_email ||= candidate_emails.find { |candidate| InternalDeployment.signup_email_allowed?(candidate) }
       end
 
       def email

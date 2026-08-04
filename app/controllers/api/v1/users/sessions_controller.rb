@@ -5,9 +5,11 @@ class Api::V1::Users::SessionsController < Devise::SessionsController
   include Authenticable
   include AuthResponsePayload
   include CurrentCompanyConcern
+  include InternalDeploymentAccess
   include SameOriginAuthentication
 
   before_action :authenticate_user_using_x_auth_token, only: :me
+  before_action :enforce_internal_deployment_allowlist!, only: :me
   before_action :reject_cross_origin_authentication!, only: :create
 
   respond_to :json
@@ -21,6 +23,8 @@ class Api::V1::Users::SessionsController < Devise::SessionsController
       render_invalid_password_error
     elsif !user.confirmed?
       render_unconfirmed_user_error(user)
+    elsif !InternalDeployment.authenticated_user_allowed?(user)
+      render_internal_access_denied
     elsif passkey_login_unsupported?(user)
       render_passkey_unsupported_error
     elsif passkey_login_required?(user)
@@ -92,6 +96,10 @@ class Api::V1::Users::SessionsController < Devise::SessionsController
       }, status: 422
     end
 
+    def render_internal_access_denied
+      render json: { error: "This account is not approved for the internal workspace." }, status: 403
+    end
+
     def render_passkey_unsupported_error
       render json: {
         error: "This account requires a passkey. Sign in from the web app to continue."
@@ -138,7 +146,7 @@ class Api::V1::Users::SessionsController < Devise::SessionsController
       options = ::WebAuthn::RelyingParty.new(
         allowed_origins: [request.base_url],
         id: request.host,
-        name: "Miru"
+        name: InternalDeployment.enabled? ? "Lanthos Ops" : "Miru"
       ).options_for_authentication(
         allow: user.passkeys.pluck(:external_id),
         user_verification: "preferred"

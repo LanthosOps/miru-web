@@ -33,14 +33,8 @@ class Api::V1::UsersController < Api::V1::BaseController
         )&.merge(
           "address" => current_company&.current_address,
           "logo" => current_company&.company_logo,
-          "pro_access" => current_company&.pro_access?,
-          "plan_tier" => current_company&.plan_tier,
-          "current_plan_label" => current_company&.current_plan_label,
-          "team_member_limit" => current_company&.team_member_limit,
-          "used_team_seats" => current_company&.used_team_seats,
-          "reserved_team_seats" => current_company&.reserved_team_seats,
-          "team_member_limit_reached" => current_company&.team_member_limit_reached?
-        ),
+          "plan_tier" => current_company&.plan_tier
+        )&.merge(CompanyAccessPayload.for(current_company)),
         company_role: current_user.roles.find_by(resource: current_company)&.name
       }
     else

@@ -57,6 +57,22 @@ RSpec.describe Authentication::Github, type: :class do
       expect(user.identities.find_by(provider: described_class::PROVIDER, uid: user_data.uid)).to be_present
     end
 
+    it "uses an approved verified email in an internal deployment" do
+      user_data.info.email = "public@example.com"
+      user_data.extra.all_emails = [
+        { "email" => "public@example.com", "verified" => true },
+        { "email" => "owner@example.com", "verified" => true }
+      ]
+      allow(ENV).to receive(:[]).and_call_original
+      allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+      allow(ENV).to receive(:fetch).and_call_original
+      allow(ENV).to receive(:fetch).with("MIRU_ALLOWED_SIGNUP_EMAILS", "").and_return("owner@example.com")
+
+      user = described_class.new(user_data).user!
+
+      expect(user.email).to eq("owner@example.com")
+    end
+
     it "falls back to nickname when first and last names are blank" do
       user_data.info.first_name = nil
       user_data.info.last_name = nil

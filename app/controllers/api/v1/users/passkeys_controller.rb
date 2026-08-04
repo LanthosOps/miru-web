@@ -75,6 +75,7 @@ class Api::V1::Users::PasskeysController < Api::V1::ApplicationController
     user = User.find(payload["user_id"])
     company = Company.find_by(id: payload["company_id"])
     raise ActiveRecord::RecordNotFound unless user.active_for_authentication? && company && user.employed_at?(company.id)
+    return unless ensure_internal_deployment_user_allowed!(user)
 
     credential, passkey = relying_party.verify_authentication(
       authentication_params[:credential].to_h,
@@ -166,7 +167,7 @@ class Api::V1::Users::PasskeysController < Api::V1::ApplicationController
       @relying_party ||= ::WebAuthn::RelyingParty.new(
         allowed_origins: [request.base_url],
         id: request.host,
-        name: "Miru"
+        name: InternalDeployment.enabled? ? "Lanthos Ops" : "Miru"
       )
     end
 

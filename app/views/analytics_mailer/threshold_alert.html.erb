@@ -1,3 +1,4 @@
+<% internal_deployment = InternalDeployment.enabled? %>
 <% content_for :email_preheader, "#{@company.name}: #{@alert[:title]}" %>
 <% content_for :email_eyebrow, "Analytics alert" %>
 <% content_for :email_title, @alert[:title] %>
@@ -7,7 +8,7 @@
 
 <div class="email-panel email-panel-warning">
   <p class="email-panel-title"><%= @company.name %></p>
-  <p style="margin: 0;">Review this threshold alert in Miru before taking action.</p>
+  <p style="margin: 0;">Review this threshold alert in <%= internal_deployment ? "Lanthos Ops" : "Miru" %> before taking action.</p>
 </div>
 
 <% if @alert[:metadata].present? %>

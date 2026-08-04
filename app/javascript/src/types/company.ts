@@ -47,6 +47,7 @@ export interface Company {
   pro_access?: boolean;
   plan_tier?: string;
   billing_exempt?: boolean;
+  internal_deployment?: boolean;
   trial_active?: boolean;
   trial_ends_at?: string | null;
   trial_expired?: boolean;

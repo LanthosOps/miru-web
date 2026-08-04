@@ -2,7 +2,14 @@
   <div class="min-h-full flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-md w-full space-y-8">
       <div>
-        <img class="mx-auto h-16 w-auto" src="/miru-logo.svg" alt="Miru logo">
+        <% if InternalDeployment.enabled? %>
+          <div class="mx-auto flex items-center justify-center gap-3 text-gray-900">
+            <%= image_tag "lanthosMark.svg", class: "h-12 w-12", alt: "Lanthos" %>
+            <span class="text-2xl font-semibold tracking-tight">Lanthos Ops</span>
+          </div>
+        <% else %>
+          <img class="mx-auto h-16 w-auto" src="/miru-logo.svg" alt="Miru logo">
+        <% end %>
         <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
           <div class="bg-white py-8 px-8 shadow-lg rounded-xl">
             <div class="space-y-6">

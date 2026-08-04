@@ -14,6 +14,8 @@ module Subscriptions
     end
 
     def process
+      return false if InternalDeployment.enabled?
+
       return :skipped unless reconcilable?
 
       subscription = Stripe::Subscription.retrieve(company.stripe_subscription_id)

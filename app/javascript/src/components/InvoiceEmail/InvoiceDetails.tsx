@@ -1,8 +1,8 @@
 import React from "react";
 
+import BrandLogo from "common/BrandLogo";
 import InvoiceInfo from "./InvoiceInfo";
 import InvoiceTotalSummary from "./InvoiceTotalSummary";
-import { MiruLogoWithTextSVG } from "miruIcons";
 
 import CompanyInfo from "../Invoices/common/CompanyInfo";
 import ClientInfo from "../Invoices/Invoice/ClientInfo";
@@ -53,7 +53,7 @@ const InvoiceDetails = ({
         <div className="border-t-2 border-border bg-background px-10 py-6">
           <div className="max-w-xs rounded-lg border border-border bg-card p-4">
             <div className="mb-3 flex items-center justify-center border-b border-border pb-3">
-              <img alt="Miru" className="h-6" src={MiruLogoWithTextSVG} />
+              <BrandLogo imageClassName="h-6 w-auto" />
             </div>
             <img
               alt="UPI QR code"

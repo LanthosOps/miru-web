@@ -6,6 +6,18 @@ RSpec.describe Subscriptions::StripeSyncService do
   describe ".process" do
     let(:company) { create(:company, plan_tier: "free") }
 
+    it "does not mutate subscription state in an internal deployment" do
+      allow(ENV).to receive(:[]).and_call_original
+      allow(ENV).to receive(:[]).with("MIRU_INTERNAL_DEPLOYMENT").and_return("true")
+      allow(Stripe::Subscription).to receive(:retrieve)
+
+      result = described_class.process(company:, stripe_subscription_id: "sub_internal")
+
+      expect(result).to eq(false)
+      expect(Stripe::Subscription).not_to have_received(:retrieve)
+      expect(company.reload.plan_tier).to eq("free")
+    end
+
     it "updates the company from an active Stripe subscription" do
       allow(ENV).to receive(:[]).and_call_original
       allow(ENV).to receive(:[]).with("PLAN_PURCHASE_ALERT_EMAIL").and_return("vipul@saeloun.com")

@@ -9,6 +9,7 @@ class Api::V1::ApplicationController < ActionController::API
   include Pagy::Backend
   include SetCurrentDetails
   include Authenticable
+  include InternalDeploymentAccess
 
   around_action :switch_locale
   before_action :authenticate_user!
