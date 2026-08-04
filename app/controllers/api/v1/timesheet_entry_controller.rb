@@ -5,9 +5,8 @@ require "digest"
 class Api::V1::TimesheetEntryController < Api::V1::ApplicationController
   include DateRangeParamParsing
 
-  class IdempotencyConflictError < StandardError; end
-
-  rescue_from IdempotencyConflictError, with: :handle_idempotency_conflict
+  rescue_from ::Idempotency::Store::InvalidKeyError, with: :handle_invalid_idempotency_key
+  rescue_from ::Idempotency::Store::PayloadMismatchError, with: :handle_idempotency_conflict
 
   skip_after_action :verify_authorized, only: [:index]
   after_action :verify_policy_scoped, only: [:index]
@@ -81,29 +80,12 @@ class Api::V1::TimesheetEntryController < Api::V1::ApplicationController
     end
 
     def idempotent_create_payload
-      return create_payload if idempotency_key.blank?
-
-      raise ActionController::BadRequest, "Idempotency-Key is too long" if idempotency_key.bytesize > 100
-
-      TimesheetEntry.transaction do
-        acquire_idempotency_lock
-        MCPIdempotencyRecord.expired.delete_all
-        cached = MCPIdempotencyRecord.find_by(key_digest: idempotency_digest)
-
-        if cached
-          replay_payload(cached)
-        else
-          payload = create_payload
-          MCPIdempotencyRecord.create!(
-            key_digest: idempotency_digest,
-            response: {
-              "request_digest" => idempotency_request_digest,
-              "payload" => payload
-            },
-            expires_at: 24.hours.from_now
-          )
-          payload
-        end
+      ::Idempotency::Store.fetch(
+        scope: ["api", "timesheet-entry", "create", current_company.id, current_user.id].join(":"),
+        key: idempotency_key,
+        request_digest: idempotency_request_digest
+      ) do
+        create_payload
       end
     end
 
@@ -119,12 +101,6 @@ class Api::V1::TimesheetEntryController < Api::V1::ApplicationController
 
     def idempotency_key
       @_idempotency_key ||= request.headers["Idempotency-Key"].to_s.strip
-    end
-
-    def idempotency_digest
-      @_idempotency_digest ||= Digest::SHA256.hexdigest(
-        ["api", "timesheet-entry", "create", current_company.id, current_user.id, idempotency_key].join(":")
-      )
     end
 
     def idempotency_request_digest
@@ -143,23 +119,11 @@ class Api::V1::TimesheetEntryController < Api::V1::ApplicationController
       timesheet_entry_params.except(:project_id)
     end
 
-    def replay_payload(cached)
-      if cached.response["request_digest"] != idempotency_request_digest
-        raise IdempotencyConflictError, "Idempotency-Key was already used with different time entry data"
-      end
-
-      cached.response.fetch("payload")
-    end
-
     def handle_idempotency_conflict(exception)
       render json: { errors: exception.message }, status: 409
     end
 
-    def acquire_idempotency_lock
-      connection = ApplicationRecord.connection
-      return unless connection.adapter_name == "PostgreSQL"
-
-      lock_id = [idempotency_digest].pack("H*").unpack1("q>")
-      connection.select_value("SELECT pg_advisory_xact_lock(#{lock_id})")
+    def handle_invalid_idempotency_key(exception)
+      render json: { errors: exception.message }, status: 400
     end
 end

@@ -76,7 +76,7 @@ RSpec.describe "Api::V1::TimesheetEntry#create", type: :request do
         send_request :post, api_v1_timesheet_entry_index_path, params: changed_params, headers: headers
 
         expect(response).to have_http_status(:conflict)
-        expect(json_response["errors"]).to match(/already used with different time entry data/)
+        expect(json_response["errors"]).to match(/already used with different request data/)
       end.to change(TimesheetEntry, :count).by(1)
     end
 
@@ -106,6 +106,7 @@ RSpec.describe "Api::V1::TimesheetEntry#create", type: :request do
       end.not_to change(TimesheetEntry, :count)
 
       expect(response).to have_http_status(:bad_request)
+      expect(json_response).to eq("errors" => "Idempotency-Key must be 100 bytes or fewer")
     end
 
     it "allows a submission key to be reused after its replay window expires" do

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "rails_helper"
+require "timeout"
 
 RSpec.describe MCP::Miru::IdempotencyStore do
   describe ".fetch" do
@@ -80,32 +81,78 @@ RSpec.describe MCP::Miru::IdempotencyStore do
       expect(calls).to eq(2)
     end
 
-    it "does not run a duplicate request while the first request is in progress" do
-      duplicate_error = nil
+    it "replays the first result when the same key arrives concurrently" do
+      first_started = Queue.new
+      release_first = Queue.new
+      second_started = Queue.new
+      results = Queue.new
+      errors = Queue.new
+      calls = 0
+      calls_mutex = Mutex.new
 
-      described_class.fetch(tool_name:, idempotency_key: "in-progress", authorization:) do
+      threads = [
         Thread.new do
-          described_class.fetch(tool_name:, idempotency_key: "in-progress", authorization:) { result }
+          fetched = described_class.fetch(tool_name:, idempotency_key: "in-progress", authorization:) do
+            calls_mutex.synchronize { calls += 1 }
+            first_started << true
+            release_first.pop
+            result
+          end
+          results << fetched
         rescue StandardError => error
-          duplicate_error = error
-        end.join
+          errors << error
+        end
+      ]
 
-        result
+      Timeout.timeout(5) { first_started.pop }
+      threads << Thread.new do
+        second_started << true
+        fetched = described_class.fetch(tool_name:, idempotency_key: "in-progress", authorization:) do
+          calls_mutex.synchronize { calls += 1 }
+          result
+        end
+        results << fetched
+      rescue StandardError => error
+        errors << error
       end
 
-      expect(duplicate_error).to be_present
-      expect(duplicate_error.message).to match(/already in progress/)
+      Timeout.timeout(5) { second_started.pop }
+      Timeout.timeout(5) { Thread.pass until threads.last.status == "sleep" }
+      release_first << true
+      threads.each { |thread| expect(thread.join(5)).to be_present }
+
+      expect(errors).to be_empty
+      expect(calls).to eq(1)
+      expect(2.times.map { results.pop.to_h }.uniq).to eq([result.to_h])
+    ensure
+      release_first << true if release_first&.empty?
+      threads&.each do |thread|
+        next if thread.join(1)
+
+        thread.kill
+        thread.join
+      end
+      digest = described_class.send(
+        :key_digest,
+        tool_name:,
+        idempotency_key: "in-progress",
+        authorization:
+      )
+      cleanup = Thread.new do
+        MCPIdempotencyRecord.where(key_digest: digest).delete_all
+      end
+      cleanup.join
     end
 
     it "retries expired results" do
-      key = described_class.send(
-        :build_key,
+      digest = described_class.send(
+        :key_digest,
         tool_name:,
         idempotency_key: "expired",
         authorization:
       )
       MCPIdempotencyRecord.create!(
-        key_digest: Digest::SHA256.hexdigest(key),
+        key_digest: digest,
         response: result.to_h,
         expires_at: 1.second.ago
       )

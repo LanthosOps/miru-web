@@ -2,6 +2,7 @@
 
 Rails.autoloaders.main.ignore(Rails.root.join("app/mcp"))
 
+require Rails.root.join("app/services/idempotency/store")
 require Rails.root.join("app/mcp/api_proxy")
 require Rails.root.join("app/mcp/idempotency_store")
 require Rails.root.join("app/mcp/pro_access_checker")
